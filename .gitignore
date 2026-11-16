@@ -21,6 +21,8 @@ node_modules
 site/dist/
 site/worker/
 site/.env*
+# cf 构建产物与生成的类型
+.cloudflare/
 
 # npm 凭据：含 auth token，绝不入库
 .npmrc

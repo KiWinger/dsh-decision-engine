@@ -55,12 +55,12 @@ site/
 环境变量（全部部署时填，**不要写进仓库**）：
 
 ```sh
-npx wrangler secret put PROVIDER_BASE_URL           # 下发给插件的基础地址
-npx wrangler secret put PROVIDER_MODEL              # 下发的模型名；留空 = 不发送 model 字段
-npx wrangler secret put PROVIDER_ENDPOINT_STYLE     # auto（默认）/ decisions / systemone
-npx wrangler secret put PROVIDER_KEY                # 下游服务商的 api-key（必须 secret）
-npx wrangler secret put PROVIDER_CONFIG_TTL_SECONDS # 可选，夹取 60..3600，默认 600
-npx wrangler secret put PROVIDER_CONFIG_TOKEN       # 可选门禁
+npx cf workers secrets update PROVIDER_BASE_URL           # 下发给插件的基础地址
+npx cf workers secrets update PROVIDER_MODEL              # 下发的模型名；留空 = 不发送 model 字段
+npx cf workers secrets update PROVIDER_ENDPOINT_STYLE     # auto（默认）/ decisions / systemone
+npx cf workers secrets update PROVIDER_KEY                # 下游服务商的 api-key（必须 secret）
+npx cf workers secrets update PROVIDER_CONFIG_TTL_SECONDS # 可选，夹取 60..3600，默认 600
+npx cf workers secrets update PROVIDER_CONFIG_TOKEN       # 可选门禁
 ```
 
 行为：
@@ -148,7 +148,7 @@ Cloudflare 后台 **Settings → Builds → Build Configuration** 的设置：
 cd site
 npm ci                 # 与 CI 同一条命令
 npm run build          # 生成 worker/bundle.js（省略也可，wrangler 会自己跑）
-npx wrangler deploy --dry-run   # 只打包不上传
+npx cf deploy --dry-run   # 只打包不上传
 ```
 
 `npm run build` 产出的 `worker/bundle.js` 是确定性的：同一份源码在本地

@@ -6,11 +6,12 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs && node make-bundle.mjs",
-    "deploy": "wrangler deploy",
-    "preview": "wrangler versions upload"
+    "deploy": "cf deploy",
+    "preview": "cf workers versions create"
   },
   "devDependencies": {
-    "wrangler": "4.154.0"
+    "cf": "^1.0.0-rc.0",
+    "wrangler": "^4.163.0"
   },
   "engines": {
     "node": ">=20.3.0"
