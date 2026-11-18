@@ -186,7 +186,7 @@ base64 文本并打 `bin:1` 标记，运行时先 `atob` 还原成字节再交�
 
 1. 在 `build.mjs` 里加一段 `xxxBody`（中文）并写进 `dist/xxx/index.html`；英文版放 `lib/content-en.mjs` 的 `xxxBodyEn`，由 `build.mjs` 顶部 import；
 2. 在首页 `indexBody`（中文）与 `indexBodyEn`（英文）的 `<div class="projects">` 里各加一个 `<a class="project">` 条目（结构见现有两条），并在 `partials.mjs` 里给它画一个图标；
-3. 在 `build.mjs` 顶部 `navLinksFor` 里给新插件加一条导航（`${prefix}/xxx/#...`），双语共用；
+3. 导航不列举插件：插件入口就在首页的索引卡片里，子页自动带一条返回首页的链接，`build.mjs` 的 `navLinksFor` 无需改动；
 4. `make-bundle.mjs` 会从 `dist/` 自动推导目录重定向列表（含 `/xxx`、`/en/xxx`），无需手动加 `DIRS`。
 
 ## 注意

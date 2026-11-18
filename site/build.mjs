@@ -11,16 +11,10 @@ const DIST = path.join(HERE, "dist");
 // 页面不展示版本号：版本随时会更新，写死/读取都会立刻漂移，索性不显示。
 const ORIGIN = "https://dsh.zuos.us";
 
-// 两个语言的顶部导航。链接都写绝对路径，子目录页也能正确跳转。
-function navLinksFor(locale) {
-  const prefix = locale === "zh" ? "" : "/en";
-  const L = locale === "zh";
-  // 首页是插件索引，导航也保持中立：两个插件各一条，不带某插件的章节锚点。
-  return [
-    { href: `${prefix}/dsh-decision-engine/`, label: L ? "决策引擎" : "Decision engine" },
-    { href: `${prefix}/dsh-model-flatmap/`, label: L ? "模型平铺" : "Model flatmap" },
-    { href: "https://github.com/zuosus", label: "GitHub" },
-  ];
+// 顶部导航不列举插件：插件入口在首页的索引卡片里。
+// 这里只放站点级链接（GitHub）；各插件子页另有返回首页的链接。
+function navLinksFor() {
+  return [{ href: "https://github.com/zuosus", label: "GitHub" }];
 }
 
 /**
@@ -31,6 +25,8 @@ function navLinksFor(locale) {
  */
 function page(title, description, body, { lang = "zh-CN", self = "/", alt = null } = {}) {
   const locale = lang.startsWith("zh") ? "zh" : "en";
+  // 首页有中英两条路径（/ 与 /en/），都不该自链返回首页。
+  const isHome = self === "/" || self === "/en/";
   const canonical = ORIGIN + self;
   const altHref = alt ? ORIGIN + alt.path : null;
   const hreflang = alt
@@ -56,7 +52,11 @@ ${hreflang}
 <body>
 ${nav({
     brand: "dsh.zuos.us",
-    links: navLinksFor(locale),
+    links: [
+      // 只有插件子页需要返回首页；首页本身就是索引，不必自链。
+      ...(isHome ? [] : [{ href: locale === "zh" ? "/" : "/en/", label: locale === "zh" ? "返回首页" : "Back to home" }]),
+      ...navLinksFor(),
+    ],
     i18n: alt ? { href: alt.path, label: alt.label, hreflang: locale === "zh" ? "en" : "zh-CN" } : null,
     themeAria: locale === "zh" ? "切换主题" : "Toggle theme",
   })}
