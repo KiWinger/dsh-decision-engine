@@ -1,8 +1,8 @@
 // 站点构建期共用的 HTML 片段。纯字符串拼接，无模板引擎。
 //
-// 图标：插件包里的 icon.svg 是它们自己的资产，站点不改动；这里另画一套
-// 站点用的图标（导航品牌 + 各插件各自的图标），风格统一：渐变描边、
-// 平涂、无底砖、36×36 视口、userSpaceOnUse 让同一枚图标里渐变方向一致。
+// 图标：插件包里的 icon.svg 是它们自己的资产，站点不改动。
+// 站点品牌图标用社区创作的「鲸鱼娘 / 蓝色大肥鱼」形象（见 site/assets/mascot.png
+// 与 README 的署名说明）；三个插件页仍各用一枚渐变描边的自绘 SVG，风格统一。
 
 const GRAD = (id) => `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="3" y1="6" x2="33" y2="30">
       <stop offset="0%" stop-color="#3AC251"/>
@@ -10,13 +10,8 @@ const GRAD = (id) => `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" 
       <stop offset="100%" stop-color="#1481BF"/>
     </linearGradient>`;
 
-// 品牌：两层叠加的「层」，意思是给 DSH 加一层判断。
-const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" aria-label="dsh.zuos.us">
-  <defs>${GRAD("brand")}</defs>
-  <path d="M18 5.5 31 13 18 20.5 5 13z" fill="url(#brand)"/>
-  <path d="M5 19.5 18 27 31 19.5" fill="none" stroke="url(#brand)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".78"/>
-  <path d="M5 25.5 18 33 31 25.5" fill="none" stroke="url(#brand)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
-</svg>`;
+// 品牌：社区「鲸鱼娘 / 蓝色大肥鱼」拟人化形象，站点自有资产 PNG。
+const ICON = `<img class="brand-mascot" src="/assets/mascot.png" alt="" role="img" aria-label="dsh.zuos.us" width="28" height="28">`;
 
 // dsh-decision-engine：一个输入 → 一个判断点 → 三种处置（放行 / 询问 / 拦截）。
 const DECISION_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" aria-label="Decision Engine">

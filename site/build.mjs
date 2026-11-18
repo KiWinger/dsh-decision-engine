@@ -45,7 +45,7 @@ function page(title, description, body, { lang = "zh-CN", self = "/", alt = null
 ${hreflang}
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f7fa">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/mascot.png" type="image/png">
 <link rel="stylesheet" href="/assets/style.css">
 <script src="/assets/theme.js"></script>
 </head>
@@ -801,22 +801,6 @@ const pocketkitBody = `;
  * 渲染
  * ------------------------------------------------------------------ */
 
-// 与 partials.mjs 的品牌图标同一造型，深色底 + 渐变三层。
-const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="6" y1="10" x2="58" y2="54">
-      <stop offset="0%" stop-color="#3AC251"/>
-      <stop offset="52%" stop-color="#2BAE7E"/>
-      <stop offset="100%" stop-color="#1481BF"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="#0b0e14"/>
-  <path d="M32 11 55 24 32 37 9 24z" fill="url(#g)"/>
-  <path d="M9 35 32 48 55 35" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity=".78"/>
-  <path d="M9 45 32 58 55 45" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
-</svg>
-`;
-
 if (existsSync(DIST)) await rm(DIST, { recursive: true, force: true });
 await mkdir(path.join(DIST, "assets"), { recursive: true });
 await mkdir(path.join(DIST, "dsh-decision-engine"), { recursive: true });
@@ -829,6 +813,7 @@ await mkdir(path.join(DIST, "en", "dsh-pocket-kit"), { recursive: true });
 await copyFile(path.join(HERE, "assets/style.css"), path.join(DIST, "assets/style.css"));
 await copyFile(path.join(HERE, "assets/app.js"), path.join(DIST, "assets/app.js"));
 await copyFile(path.join(HERE, "assets/theme.js"), path.join(DIST, "assets/theme.js"));
+await copyFile(path.join(HERE, "assets/mascot.png"), path.join(DIST, "assets/mascot.png"));
 // 站点自包含：把两个插件的宣传图与截图一并拷进 dist/，make-bundle.mjs 会以
 // base64 嵌进 Worker（见 BINARY_EXT）。图片源在各自仓库的 docs/assets/ 里，
 // 这里只放优化过的副本，不引用 GitHub，避免 CSP 放行外域与外链失效。
@@ -949,7 +934,5 @@ await writeFile(
     EN_POCKETKIT
   )
 );
-
-await writeFile(path.join(DIST, "favicon.svg"), favicon);
 
 console.log("built ->", DIST);

@@ -131,7 +131,8 @@ a:hover { text-decoration: underline; }
   font-weight: 650; color: var(--fg); letter-spacing: -0.01em;
 }
 .brand:hover { text-decoration: none; }
-.brand svg { width: 26px; height: 26px; display: block; }
+.brand svg,
+.brand img.brand-mascot { width: 26px; height: 26px; display: block; object-fit: contain; }
 .nav-spacer { flex: 1; }
 .nav a.link { color: var(--fg-dim); font-size: 14.5px; }
 .nav a.link:hover { color: var(--fg); text-decoration: none; }
