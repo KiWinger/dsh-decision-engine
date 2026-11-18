@@ -50,13 +50,14 @@ export const indexBodyEn = `
       <div>
         <h3>dsh-model-flatmap</h3>
         <p>
-          Replaces the model picker with one flat panel: every model and
-          reasoning level at once, no submenus, with search and grouping.
-          Disabling restores the native control.
+          Replaces the model picker with one flat panel: every model, reasoning
+          level and teamwork switch at once, no submenus, with search and grouping.
+          The Settings page narrows the catalogue and renames providers, and a
+          button hands back to the native style. Disabling restores the native control.
         </p>
         <div class="toc">
           <span class="badge green">Flat, no submenus</span>
-          <span class="badge blue">Theme-aware</span>
+          <span class="badge blue">Filterable · renamable</span>
           <span class="badge gray">MIT</span>
         </div>
       </div>
@@ -441,7 +442,9 @@ export const flatmapBodyEn = `
     Replaces the composer model picker with <strong>one flat panel</strong>:
     every model, reasoning level and teamwork switch on the same surface,
     visible at once — no nested popovers. Search, grouping and theme-awareness
-    all live in that one panel.
+    all live in that one panel; Settings narrows the catalogue, renames providers
+    and hands back to the native style, and an optional anonymous-usage toggle
+    is built in.
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">Install</a>
@@ -451,6 +454,7 @@ export const flatmapBodyEn = `
   <div class="toc">
     <a href="#what">What it is</a>
     <a href="#features">Features</a>
+    <a href="#settings">Settings</a>
     <a href="#install">Install</a>
     <a href="#layout">Layout</a>
     <a href="#dev">Development</a>
@@ -462,8 +466,10 @@ export const flatmapBodyEn = `
 <section class="wrap" id="what">
   <h2>What it is</h2>
   <p class="sub">
-    A <strong>browser-only</strong> DSH plugin. It swaps the composer's
-    <code>conversation.input.model</code> control for a searchable flat grid.
+    A <strong>client-side</strong> DSH plugin that works in both the Web GUI and
+    the Desktop app. It swaps the composer's <code>conversation.input.model</code>
+    control for a searchable flat grid; the thin host half only sends the optional
+    anonymous heartbeat and answers two trust-fenced helper routes.
   </p>
 
   <div class="stats">
@@ -477,7 +483,7 @@ export const flatmapBodyEn = `
 
   <div class="facts">
     ${fact("One surface", "The trigger opens one panel capped at 320px. Header, reasoning row and teamwork row stay fixed; only the model grid scrolls — see everything at once instead of drilling through popovers.")}
-    ${fact("Public APIs only", "Reads and writes through public Client APIs only — the per-Session model directory, teamwork setting and host locale. The host half <code>index.js</code> contributes no service, tool or event; the UI lives in <code>client.js</code> and shadows the native <code>ModelSelect</code> with a negative priority.")}
+    ${fact("Public APIs · thin host", "The panel reads and writes through public Client APIs only — the per-Session model directory, teamwork setting and host locale — and shadows the native <code>ModelSelect</code> with a negative priority. The host half contributes no service, tool or event; it only sends the optional anonymous heartbeat and answers two helper routes.")}
     ${fact("Disable to restore", "Turning the bundle off touches no native control and restores <code>ModelSelect</code> with no residue. Plain ES modules, no build step.")}
   </div>
 </section>
@@ -488,14 +494,29 @@ export const flatmapBodyEn = `
   <h2>Features</h2>
   <p class="sub">No nested submenus — instead, one searchable, groupable, theme-aware surface.</p>
   <div class="facts">
-    ${fact("Global search", "Across every provider and family; empty groups are dropped, so no stray headings. Ranking: prefix &gt; substring &gt; ordered character matches.")}
-    ${fact("Word-wise search", "Whitespace splits the query into tokens; every token must land in the name. A hit ranks by its weakest token.")}
-    ${fact("Provider-wide", "A query matching a provider (id / catalog name / section label) keeps that provider's entire catalogue in the grid.")}
-    ${fact("Two groupings", "A segment control switches between By provider and By family. Grouping and search are independent and combine freely.")}
-    ${fact("Model families", "Dictionary recognises DeepSeek, Grok, Claude, Qwen, GLM, Kimi, GPT, Gemini, Llama and more; registered brands split by generation (HY3 / HY4 / HY), unrecognised models infer from their id, anything unjudgeable falls into Others (always last). Families stay flat.")}
-    ${fact("Reasoning effort", "The current model's reasoning levels render as an exclusive, keyboard-operable group (radio semantics). They share a line with the teamwork switch when it fits, else wrap — decided by CSS flex.")}
-    ${fact("Strike-through", "A model whose call failed on insufficient balance keeps a <code>line-through</code> until a later call for that same model returns anything else; a plain rate-limit 429 never strikes.")}
+    ${fact("Search", "Across every provider and family; empty groups are dropped, so no stray headings. Ranking: prefix &gt; substring &gt; ordered character matches. Whitespace splits the query into tokens, every one must land in the name; a query matching a provider (id / catalog name / section label) keeps its entire catalogue.")}
+    ${fact("Two groupings · families", "A segment control switches between By provider and By family, independent of search. Dictionary recognises DeepSeek, Claude, Qwen, GPT and more; registered brands split by generation (HY3 / HY4 / HY), unrecognised models infer from their id, anything unjudgeable falls into Others (always last). Families stay flat.")}
+    ${fact("Native labels, row for row", "The trigger and every By-provider row render the native picker's own <code>conversation.input.model.label</code> slot — promotions, rate multipliers and load marks exactly as in the stock menu. By-family rows keep their quieter model tail, and a crashing decoration falls back to the catalog name.")}
+    ${fact("Reasoning · teamwork", "Reasoning levels render as an exclusive, keyboard-operable group (radio semantics); they share a line with the teamwork switch when it fits, else wrap. If the Host's Team services are not mounted, the teamwork row stays visible but disabled with a hint — it never silently disappears.")}
+    ${fact("'Default style' native mode", "The bottom-right button <strong>steps aside</strong> (disposes its own registration) to hand the seat back to the host's real shipped <code>ModelSelect</code>, so it is always the installed DSH's latest picker. The way back is a distinct full-width outlined action at the bottom of that picker's own menu; the choice survives reloads. With no picker to hand to, the button stays disabled and the panel stays.")}
+    ${fact("Project link button", "A link icon beside 'Default style' opens the project's GitHub page in a new tab, with the URL derived from the checkout's <code>git remote -v</code> (non-GitHub hosts skipped, project home as fallback). Prefetched on panel open, so the click is a synchronous <code>window.open</code> a popup blocker won't eat.")}
+    ${fact("Strike-through, global & 24h", "A model whose call failed on insufficient balance is struck through <strong>across all sessions and workspaces</strong> and persisted to localStorage; a later successful call or 24 hours without a new attempt clears it. A 429 is judged by its body, so a genuine rate limit never strikes.")}
     ${fact("Theme-aware · no build", "Styled with host theme tokens only, correct in light and dark; plain ES modules. Tests read <code>client.js</code> directly and drive the real component to catch crashes, missing sections and wrong column counts.")}
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="settings">
+  <h2>Settings · Model list</h2>
+  <p class="sub">In Settings → Model list you can narrow the catalogue to what you actually pick from, and give providers names you remember.</p>
+  <div class="facts">
+    ${fact("Show / hide", "Every provider and every model has a switch; the provider switch is a <strong>bulk action</strong> that still leaves per-model exceptions live (turn a group off, then switch the two or three you want back on). The record stores only what is hidden, so newly installed providers appear automatically; a change re-renders open panels immediately. If everything is hidden the panel points back to Settings instead of claiming no models are available.")}
+    ${fact("Provider aliases", "Rename a provider from the pencil on its row (Enter to save, Esc to cancel, one-click restore), keyed by its stable id. One label derivation drives group headings, By-family row text, tooltips and search; routing, selection and the native style keep the catalog name, which stays searchable.")}
+    ${fact("Rows like the picker's", "Settings model rows reuse the picker's naming grammar: a <code>· x0.01</code> multiplier is lifted into a smaller bold run and the catalog's badge chip (promotion / load / rate) follows the name; out-of-balance models are flagged in text under the name, and a provider is flagged when every one of its models is out.")}
+    ${fact("Seat-conflict diagnosis", "When another plugin steals the model seat, Settings names the competitor and offers an idempotent Force repair; if 'Default style' is greyed out it explains that the picker underneath can't host the return action. It says plainly when the seat can't be fixed in place. The catalogue is force re-read on every open and refreshed when the Host announces a provider, model, setting or credential change.")}
+    ${fact("Anonymous usage statistics", "The host sends at most one anonymous heartbeat a day, containing only install id, version, platform and architecture — <strong>never prompts, models or paths</strong>. The bottom of this page has an 'Anonymous usage statistics' toggle (on by default) that the host honours on its next send with no restart; deleting <code>analytics.json</code> gives the machine a fresh id.")}
+    ${fact("Teamwork default", "The 'Enable agent teamwork' toggle sets the default for <strong>new sessions</strong> (off by default), deliberately separate from the panel's per-session switch so changing one never writes the other.")}
   </div>
 </section>
 
@@ -518,12 +539,14 @@ export const flatmapBodyEn = `
 
 <section class="wrap" id="layout">
   <h2>Project layout</h2>
-  <p class="sub">The plugin is light: the host half is almost nil, and all of the UI lives in <code>client.js</code>.</p>
+  <p class="sub">The plugin is light: all of the UI lives in <code>client.js</code>; the host half only sends the heartbeat and answers two helper routes.</p>
   ${table(
     ["Path", "Purpose"],
     [
-      ["<code>index.js</code>", "Host half — bundle entry, contributes nothing at runtime."],
-      ["<code>client.js</code>", "Browser half — the entire flat picker UI."],
+      ["<code>index.js</code>", "Host half — bundle entry; optional anonymous daily heartbeat and two helper routes."],
+      ["<code>telemetry.js</code>", "The heartbeat: pure day/decision functions plus an injectable reporter."],
+      ["<code>repo-url.js</code>", "Derives the project link from the checkout's git remote."],
+      ["<code>client.js</code>", "Browser half — the entire flat picker UI and the Settings → Model list page."],
       ["<code>cordis.patch.yml</code>", "Cordis patch applied by the <code>dsh</code> bundle loader."],
       ["<code>locale/en.json</code> / <code>locale/zh.json</code>", "English / Simplified-Chinese copy and metadata."],
       ["<code>docs/DETAIL.md</code>", "Detailed behaviour specification."],

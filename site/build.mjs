@@ -113,12 +113,13 @@ const indexBody = `
       <div>
         <h3>dsh-model-flatmap</h3>
         <p>
-          把模型选择器换成一块平铺面板：所有模型与推理等级一次看完，
-          没有二级菜单，支持搜索与分组。关闭即复原原生控件。
+          把模型选择器换成一块平铺面板：所有模型、推理等级与协作开关一次看完，
+          没有二级菜单，支持搜索与分组；设置页还能隐藏不用的 Provider / 模型、自定义名称，
+          一键切回宿主原生样式。关闭即复原原生控件。
         </p>
         <div class="toc">
           <span class="badge green">平铺无二级菜单</span>
-          <span class="badge blue">跟随主题</span>
+          <span class="badge blue">可筛选 · 可改名</span>
           <span class="badge gray">MIT</span>
         </div>
       </div>
@@ -473,7 +474,8 @@ const flatmapBody = `
   <h1>dsh-model-flatmap</h1>
   <p class="lede">
     把输入框里的模型选择器换成<strong>一块平铺面板</strong>：所有模型、推理等级、
-    协作开关在同一平面上，一次看完，没有层层弹层。搜索、分组、跟随主题都在这块面板里。
+    协作开关在同一平面上，一次看完，没有层层弹层。搜索、分组、跟随主题都在这块面板里；
+    设置页还能收窄目录、给 Provider 改名、随时切回原生样式，并自带可选的匿名使用统计开关。
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">安装</a>
@@ -483,6 +485,7 @@ const flatmapBody = `
   <div class="toc">
     <a href="#what">它是什么</a>
     <a href="#features">功能</a>
+    <a href="#settings">设置页</a>
     <a href="#install">安装</a>
     <a href="#layout">目录结构</a>
     <a href="#dev">开发</a>
@@ -494,8 +497,9 @@ const flatmapBody = `
 <section class="wrap" id="what">
   <h2>它是什么</h2>
   <p class="sub">
-    一个<strong>纯浏览器端</strong>的 DSH 插件，替换 composer 里的
-    <code>conversation.input.model</code> 控件，渲染成一块可搜索的平铺网格。
+    一个<strong>客户端</strong> DSH 插件，在 Web GUI 与桌面端都生效。它替换 composer 里的
+    <code>conversation.input.model</code> 控件，渲染成一块可搜索的平铺网格；
+    宿主部分很薄，只负责可选的匿名心跳与两个带信任栅栏的辅助路由。
   </p>
 
   <div class="stats">
@@ -509,7 +513,7 @@ const flatmapBody = `
 
   <div class="facts">
     ${fact("一块平面", "触发器打开高度上限 320px 的面板。头部、推理等级行、协作行固定常驻，只有模型网格滚动——信息一次看完，不用在弹层之间来回钻。")}
-    ${fact("只用公开 API", "只通过公开的 Client API 读写模型目录、协作设置与宿主文案；宿主部分 <code>index.js</code> 不提供任何服务/工具/事件，UI 全在 <code>client.js</code>，用负优先级覆盖原生 <code>ModelSelect</code>。")}
+    ${fact("公开 API + 薄宿主", "面板只通过公开的 Client API 读写模型目录、协作设置与宿主文案，UI 全在 <code>client.js</code>，用负优先级覆盖原生 <code>ModelSelect</code>；宿主部分不提供服务、工具或事件，只发可选匿名心跳、响应两个辅助路由。")}
     ${fact("禁用即复原", "关闭 bundle 不触碰任何原生控件，<code>ModelSelect</code> 无残留地恢复。纯 ES 模块、零构建。")}
   </div>
 </section>
@@ -520,14 +524,29 @@ const flatmapBody = `
   <h2>功能</h2>
   <p class="sub">没有嵌套菜单，取而代之的是一块可搜索、可分组、跟随主题的平面。</p>
   <div class="facts">
-    ${fact("全局搜索", "跨所有 provider 与 family 过滤；空组会被丢弃，不留空标题。命中排序：前缀 &gt; 子串 &gt; 有序字符匹配。")}
-    ${fact("分词搜索", "空白把查询拆成多个 token，每个都要在名称中命中；一次命中的排序取决于最弱的那个 token。")}
-    ${fact("按 provider 整体", "查询若命中某个 provider（id / 目录名 / 分组标签），该 provider 的整个目录都会保留。")}
-    ${fact("两种分组", "分段控件在「按 provider」与「按 family」间切换；分组与搜索彼此独立，可任意组合。")}
-    ${fact("模型家族", "内置词典识别 DeepSeek、Grok、Claude、Qwen、GLM、Kimi、GPT、Gemini、Llama 等；已注册品牌按 generation 分节（HY3 / HY4 / HY），未覆盖的按 id 推断，无法判断归 Others（永远排最后）。家族保持平铺。")}
-    ${fact("推理等级", "当前模型的推理等级渲染成互斥、可键盘操作的分组（基于 radio 语义）。与协作开关放得下就共用一行，放不下各占一行，换行由 CSS flex 决定。")}
-    ${fact("额度不足划删除线", "某模型调用因额度/余额不足失败后，该行带 <code>line-through</code>，直到同模型下次返回正常结果才去掉；纯限流的 429 不划线。")}
+    ${fact("搜索", "跨所有 provider 与 family 过滤，空组丢弃、不留空标题；前缀 &gt; 子串 &gt; 有序字符匹配。空白拆词，每个 token 都要命中；命中某个 provider（id / 目录名 / 分组标签）时保留其整个目录。")}
+    ${fact("两种分组 · 模型家族", "「按 provider」与「按 family」分段切换，与搜索彼此独立。内置词典识别 DeepSeek、Claude、Qwen、GPT 等；已注册品牌按 generation 分节（HY3 / HY4 / HY），未覆盖的按 id 推断，无法判断归 Others（永远排最后）。")}
+    ${fact("与原生逐行一致的标签", "触发器与「按 provider」下的每一行都渲染原生 picker 的 <code>conversation.input.model.label</code> 槽——促销角标、倍率、负载标记与原生菜单一致；「按 family」行保留更安静的型号尾标，角标崩溃时回退到目录名。")}
+    ${fact("推理等级 · 协作开关", "推理等级是互斥、可键盘操作的分组（radio 语义）；与协作开关放得下就共用一行，放不下各占一行。宿主 Team 服务未挂载时协作行仍保留并置灰、给出提示，绝不无声消失。")}
+    ${fact("「默认样式」原生模式", "右下角按钮通过<strong>让位</strong>（dispose 自己的注册）交还宿主真正出厂的 <code>ModelSelect</code>，因此永远是当前 DSH 的最新 picker；返回入口是原生菜单底部独立的整宽描边按钮，选择跨重载保留。没有可交出的 picker 时按钮置灰、面板保持。")}
+    ${fact("项目链接按钮", "「默认样式」左侧的链接按钮在新标签打开项目 GitHub 页，地址由 checkout 的 <code>git remote -v</code> 推导（非 GitHub 宿主跳过，无 remote 时回退项目主页）；面板打开时预取，点击是同步 <code>window.open</code>，不会被弹窗拦截。")}
+    ${fact("额度不足划删除线", "某模型调用因额度/余额不足失败后，该行带 <code>line-through</code>，<strong>全局</strong>作用于所有会话与工作区并持久化到 localStorage；下次成功调用或 24 小时未再尝试即自动消失。429 由正文判定，纯限流不划线。")}
     ${fact("跟随主题 · 零构建", "只用宿主主题令牌着色，浅色/深色都正确；纯 ES 模块，测试直接读 <code>client.js</code> 驱动真实组件，捕获崩溃、缺失区块与错误列数。")}
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="settings">
+  <h2>设置页 · 模型列表</h2>
+  <p class="sub">在应用的「设置 → 模型列表」里，可以把目录收敛成只装得下的那些，并给 Provider 起自己好记的名字。</p>
+  <div class="facts">
+    ${fact("显示 / 隐藏", "每个 Provider 和每个模型各带一个开关；Provider 开关是<strong>批量写</strong>，同时保留单模型例外（关掉整组再打开想要的两三个）。记录只存被隐藏的项，新装的 Provider 默认可见；改动即时重渲已打开的面板。全部隐藏时面板会指回设置页，不会谎称「暂无可用模型」。")}
+    ${fact("自定义 Provider 名称", "点 Provider 行的铅笔改别名（Enter 保存 / Esc 取消 / 一键恢复），按稳定 id 记录。别名统一作用于分组标题、家族行主文本、tooltip 与搜索；路由、选择与原生样式仍用目录原名，原名也仍可搜索。")}
+    ${fact("与选择器同源的行", "设置页的模型行复用选择器的命名语法：<code>· x0.01</code> 倍率拆成小号粗体，目录 badge 芯片（促销 / 负载 / 费率）跟在名字后；额度不足的模型在名下以文字标注，整组都无额度时 Provider 也标注。")}
+    ${fact("席位冲突诊断", "别的插件抢占模型席位时，这里会点名占位者并提供幂等的「强制修复」；「默认样式」置灰时说明是下方 picker 无法承载返回入口；无法就地修复时如实说明。每次打开都强制重读目录，宿主公布 provider / 模型 / 设置 / 凭据变化时也会刷新。")}
+    ${fact("匿名使用统计", "宿主每日至多发一次匿名心跳，只含安装 id、版本、平台、架构，<strong>绝不含 prompt / 模型 / 路径</strong>。本页底部有「匿名使用统计」开关（默认开启），拨动后宿主下次发送即生效、无需重启；删除 <code>analytics.json</code> 可换新安装 id。")}
+    ${fact("智能体协作默认值", "「启用智能体团队协作」开关控制<strong>新会话</strong>的默认状态（默认关闭），与面板里的本次会话开关彻底分离，互不污染。")}
   </div>
 </section>
 
@@ -549,12 +568,14 @@ const flatmapBody = `
 
 <section class="wrap" id="layout">
   <h2>目录结构</h2>
-  <p class="sub">插件很轻：宿主部分几乎为零，全部 UI 集中在 <code>client.js</code>。</p>
+  <p class="sub">插件很轻：UI 全部集中在 <code>client.js</code>；宿主部分只做心跳与两个辅助路由。</p>
   ${table(
     ["路径", "用途"],
     [
-      ["<code>index.js</code>", "宿主部分——bundle 入口，运行时不提供任何能力。"],
-      ["<code>client.js</code>", "浏览器部分——完整的平铺选择器 UI。"],
+      ["<code>index.js</code>", "宿主部分——bundle 入口；可选匿名每日心跳与两个辅助路由。"],
+      ["<code>telemetry.js</code>", "心跳本体：日界/判定纯函数，加上可注入依赖的上报器。"],
+      ["<code>repo-url.js</code>", "从 checkout 的 git remote 推导项目链接地址。"],
+      ["<code>client.js</code>", "浏览器部分——完整的平铺选择器 UI 与「设置 → 模型列表」页。"],
       ["<code>cordis.patch.yml</code>", "由 <code>dsh</code> bundle 加载器应用的 Cordis 补丁。"],
       ["<code>locale/en.json</code> / <code>locale/zh.json</code>", "英文 / 简体中文文案与元数据。"],
       ["<code>docs/DETAIL.md</code>", "详细行为规格。"],
