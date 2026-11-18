@@ -1,7 +1,7 @@
 // 站点构建期共用的 HTML 片段。纯字符串拼接，无模板引擎。
 //
 // 图标：插件包里的 icon.svg 是它们自己的资产，站点不改动；这里另画一套
-// 站点用的图标（导航品牌 + 两个插件各自的图标），风格统一：渐变描边、
+// 站点用的图标（导航品牌 + 各插件各自的图标），风格统一：渐变描边、
 // 平涂、无底砖、36×36 视口、userSpaceOnUse 让同一枚图标里渐变方向一致。
 
 const GRAD = (id) => `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="3" y1="6" x2="33" y2="30">
@@ -47,6 +47,19 @@ const FLATMAP_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36
     <rect x="14.75" y="20" width="6.5" height="6" rx="1.6"/>
     <rect x="22" y="20" width="6.5" height="6" rx="1.6" opacity=".38"/>
   </g>
+</svg>`;
+
+// dsh-pocket-kit：口袋工具箱——两只工具从口袋口探出来，袋身一圈描边。
+const POCKETKIT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" aria-label="Pocket Kit">
+  <defs>${GRAD("pk")}</defs>
+  <g fill="none" stroke="url(#pk)" stroke-width="2.4" stroke-linecap="round">
+    <path d="M12.8 12.4 11.2 7.4"/>
+    <path d="M23.4 12.4 24.8 7.6"/>
+    <path d="M7 13.5v12a4.5 4.5 0 0 0 4.5 4.5h13A4.5 4.5 0 0 0 29 25.5v-12"/>
+    <path d="M4.5 13.5h27"/>
+  </g>
+  <circle cx="10.7" cy="5.6" r="2.2" fill="url(#pk)"/>
+  <rect x="24" y="3" width="3.4" height="4" rx="1.3" fill="url(#pk)"/>
 </svg>`;
 
 const esc = (s) =>
@@ -117,4 +130,4 @@ export function fact(label, text) {
   return `<div class="fact"><span class="fact-k">${label}</span><span class="fact-v">${text}</span></div>`;
 }
 
-export { ICON, DECISION_ICON, FLATMAP_ICON, esc };
+export { ICON, DECISION_ICON, FLATMAP_ICON, POCKETKIT_ICON, esc };

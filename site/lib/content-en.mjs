@@ -1,7 +1,7 @@
 // 英文版页面内容。结构与 content（build.mjs 中的中文段落）逐节对应，
 // 章节 id 保持一致（#what / #install / #config / #points / #providers /
 // #tokens / #failopen / #verify），中文页的锚点链接可以直接复用。
-import { codeBlock, table, figure, fact, DECISION_ICON, FLATMAP_ICON } from "./partials.mjs";
+import { codeBlock, table, figure, fact, DECISION_ICON, FLATMAP_ICON, POCKETKIT_ICON } from "./partials.mjs";
 
 // 页面不展示版本号：版本随时会更新，不显示以免挂旧号。
 
@@ -24,7 +24,7 @@ export const indexBodyEn = `
 
 <section class="wrap">
   <h2>Plugins</h2>
-  <p class="sub">Two so far. Click a title to open its page.</p>
+  <p class="sub">Three so far. Click a title to open its page.</p>
 
   <div class="projects">
     <a class="project" href="/en/dsh-decision-engine/">
@@ -58,6 +58,25 @@ export const indexBodyEn = `
         <div class="toc">
           <span class="badge green">Flat, no submenus</span>
           <span class="badge blue">Filterable · renamable</span>
+          <span class="badge gray">MIT</span>
+        </div>
+      </div>
+      <span class="go">Read more →</span>
+    </a>
+
+    <a class="project" href="/en/dsh-pocket-kit/">
+      ${POCKETKIT_ICON}
+      <div>
+        <h3>dsh-pocket-kit</h3>
+        <p>
+          A pocket toolkit: independent small features in one plugin, each with its own
+          switch on the Settings page, all on by default — switch one off and the native
+          behaviour returns. Live today: the workspace directory picker pinned to the
+          in-app browse backend, and recovery banners for prompts a failed turn swallowed.
+        </p>
+        <div class="toc">
+          <span class="badge green">One switch per feature</span>
+          <span class="badge blue">Off restores native</span>
           <span class="badge gray">MIT</span>
         </div>
       </div>
@@ -605,6 +624,160 @@ export const flatmapBodyEn = `
   <p class="sub">
     The full behaviour spec is in <a href="https://github.com/zuosus/dsh-model-flatmap/blob/main/docs/DETAIL.md">docs/DETAIL.md</a>,
     and the design decisions in <a href="https://github.com/zuosus/dsh-model-flatmap/blob/main/DECISIONS.md">DECISIONS.md</a>.
+  </p>
+</section>
+`;
+
+
+/* ------------------------------------------------------------------ *
+ * pocket-kit 插件页（英文）
+ * ------------------------------------------------------------------ */
+
+export const pocketkitBodyEn = `;
+<div class="wrap hero">
+  <span class="eyebrow"><span class="dot"></span> DeepSeek Harness plugin · MIT</span>
+  <h1>dsh-pocket-kit</h1>
+  <p class="lede">
+    A <strong>pocket toolkit</strong>: independent small features in one plugin, each with
+    its own switch on the Settings page — all on by default, and switching one off brings
+    the native behaviour straight back. Two are live: pinning the workspace directory
+    picker to the in-app browse backend (no restart to undo), and recovering the prompt a
+    failed turn swallowed (restore / copy / dismiss).
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="#install">Install</a>
+    <a class="btn" href="#what">What it is</a>
+    <a class="btn" href="https://github.com/zuosus/dsh-pocket-kit">GitHub</a>
+  </div>
+  <div class="toc">
+    <a href="#what">What it is</a>
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="#layout">Layout</a>
+    <a href="#dev">Development</a>
+  </div>
+</div>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="what">
+  <h2>What it is</h2>
+  <p class="sub">
+    Not a single-purpose plugin but a <strong>collection</strong>: the host installs the
+    enabled features from the <code>lib/features/</code> registry, and the client ships a
+    Pocket Kit settings page — one switch per registry row, every one volatile, so a
+    change takes effect immediately.
+  </p>
+
+  <div class="stats">
+    <div class="stat"><span class="n">2</span><span class="l">features live</span></div>
+    <div class="stat"><span class="n">1</span><span class="l">switch per feature</span></div>
+    <div class="stat"><span class="n">0</span><span class="l">switches needing a restart</span></div>
+    <div class="stat"><span class="n">3</span><span class="l">steps to add a feature</span></div>
+  </div>
+
+  <div class="facts">
+    ${fact("Mutually independent", "No feature depends on another: switch one off and the rest keep working; switch all off and behaviour is exactly as if the plugin were not installed.")}
+    ${fact("Two delivery halves", "<code>cordis.patch.yml</code> pins the boot composition (the directory picker); <code>lib/index.js</code> plus <code>lib/client.js</code> are a normal Host + Client plugin row — the client adds the settings page and the recovery banner.")}
+    ${fact("No config files rewritten", "Toggling the picker swaps rows on the in-memory root tree with <code>ctx.loader.create</code> / <code>loader.remove</code> — the same mechanism the stock auto picker uses.")}
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="features">
+  <h2>Features</h2>
+
+  <h3>inputRecovery — recover a swallowed prompt</h3>
+  <p class="sub">
+    A prompt is recorded twice on its way into a turn: the inbox insert when the browser
+    sends it, and the claim when the running turn takes it. The bubble in the transcript
+    is a third event — <code>user/message</code> — logged only after turn processing
+    starts. When a turn dies before that point (a plugin throws during tool wiring, the
+    provider explodes on the first step, the process exits mid-turn), the log holds the
+    claim and the failure but never the message: the input is gone from the UI while
+    sitting, intact, in the session log.
+  </p>
+  <div class="facts">
+    ${fact("Event feed", "The host watches the live <code>session/event</code> feed, remembers which human messages the inbox inserted and which one the turn claimed, and when a turn ends in <code>error</code> / <code>interrupted</code> / <code>aborted</code> without the claimed message ever being logged, it stores the text plus the failure reason.")}
+    ${fact("Survives restarts", "Records persist under <code>~/.dsh/dsh-pocket-kit/recovered-input.json</code>, so a host restart does not drop a pending one.")}
+    ${fact("Three actions", "A banner above the composer offers <strong>Put it back</strong> (restores the real draft through the session input actions, undo stack included), <strong>Copy</strong> (clipboard fallback) and <strong>Dismiss</strong>.")}
+  </div>
+  <p class="sub">The page reads through two same-origin routes, fenced with the same Host/Origin plus login-cookie check the open-in-app routes rely on:</p>
+  ${codeBlock("GET  /dsh-pocket-kit/recovered-input?session=<id>")}
+  ${codeBlock("POST /dsh-pocket-kit/recovered-input/ack   { session, ids }")}
+
+  <h3>pinBrowsePicker — a pinned directory picker</h3>
+  <p class="sub">
+    "Add workspace" hands the flow to whichever backend occupies the workspace
+    <code>directoryFlow</code> slot. The stock auto selector samples the host once per
+    boot: a non-loopback trusted authority, a non-loopback bind address, or an SSH
+    session pick the in-app <code>browse</code> panel; macOS / Windows, or a Linux with a
+    display, pick the native system panel. Because the sample happens only at boot, a
+    proxy rewriting the bind or authority facts, a Clash fake-ip, or a different SSH
+    launch flips the outcome — Finder opens where the built-in browser used to.
+  </p>
+  <div class="facts">
+    ${fact("Switch on (default)", "The patch disables the auto row and composes the browse backend plus its client surface directly: the picker is always the in-app panel.")}
+    ${fact("Switch off", "The stock auto selector is remounted at runtime — exactly the behaviour you would get without this plugin. No restart, no config file touched; the setting is volatile.")}
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="install">
+  <h2>Install</h2>
+  <p class="sub">A DSH <strong>bundle</strong>, installed by local link (not published to npm):</p>
+  <div class="facts">
+    ${fact("1 · dependency", "In <code>~/.dsh/profiles/&lt;profile&gt;/package.json</code> add to <code>dependencies</code>: <code>&quot;dsh-pocket-kit&quot;: &quot;link:/path/to/dsh-pocket-kit&quot;</code>.")}
+    ${fact("2 · bundles", "Add <code>&quot;dsh-pocket-kit&quot;</code> to <code>dsh.profile.bundles</code> in the same file.")}
+    ${fact("3 · install + restart", "Run <code>npm install</code> in the profile directory (or drop a symlink into its <code>node_modules/</code>), then restart DSH.")}
+  </div>
+  <div class="note ok">
+    <strong>Only the first install needs the restart.</strong> The bundled
+    <code>cordis.patch.yml</code> pins the browse picker at boot; every feature switch is
+    volatile and takes effect without another one.
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="layout">
+  <h2>Layout</h2>
+  <p class="sub">One module per feature; one registry; one config declaration.</p>
+  ${table(
+    ["Path", "Purpose"],
+    [
+      ["<code>lib/index.js</code>", "Host entry — Config declaration, installs enabled features."],
+      ["<code>lib/features/index.js</code>", "The host-side <code>FEATURES</code> registry."],
+      ["<code>lib/features/input-recovery.js</code>", "Prompt recovery: feed watcher, store, routes."],
+      ["<code>lib/features/pin-browse-picker.js</code>", "Runtime mount/unmount of the picker pin."],
+      ["<code>lib/client.js</code>", "Client half — settings page and the recovery banner."],
+      ["<code>cordis.patch.yml</code>", "Boot-composition patch pinning the browse picker."],
+      ["<code>locale/en.json</code> / <code>locale/zh.json</code>", "English / Simplified-Chinese copy and metadata."],
+      ["<code>test/</code>", "Suites driven through a minimal hook runtime."],
+      ["<code>docs/DETAIL.md</code>", "Detailed behaviour specification."],
+    ]
+  )}
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="dev">
+  <h2>Development</h2>
+  <p class="sub">Plain ES modules, no build step.</p>
+  ${codeBlock("npm test")}
+  <p class="sub">
+    Seven suites (host / config / client / render / banner / pin-switch / resolve), all
+    green in the local checkout (2026-11-19). Adding a feature takes three steps: export
+    <code>apply(ctx, enabled)</code> from <code>lib/features/&lt;id&gt;.js</code>, add one row to
+    each <code>FEATURES</code> registry (host and client), and add
+    <code>z.boolean().default(true).volatile()</code> to <code>Config</code> — the settings
+    page picks the new switch up from the schema, so no page code needs editing.
+  </p>
+  <p class="sub">
+    The full behaviour specification is in
+    <a href="https://github.com/zuosus/dsh-pocket-kit/blob/main/docs/DETAIL.md">docs/DETAIL.md</a>.
   </p>
 </section>
 `;

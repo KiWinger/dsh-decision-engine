@@ -7,7 +7,7 @@ DeepSeek Harness 插件项目的介绍站，部署在 Cloudflare Workers，域�
 
 ```
 site/
-  build.mjs            渲染 dist/（中英各两页：首页 + 插件页）
+  build.mjs            渲染 dist/（中英各四页：首页 + 三个插件页）
   make-bundle.mjs      把 dist/ 压成自包含 Worker（gzip + base64）
   deploy.mjs           上传 Worker 并挂自定义域名（手动路径，见下）
   package.json         site/ 自己的包：build / deploy 脚本 + wrangler 依赖
@@ -29,8 +29,8 @@ site/
 
 | 路径 | 语言 |
 |---|---|
-| `/`、`/dsh-decision-engine/`、`/dsh-model-flatmap/` | 中文（默认） |
-| `/en/`、`/en/dsh-decision-engine/`、`/en/dsh-model-flatmap/` | English |
+| `/`、`/dsh-decision-engine/`、`/dsh-model-flatmap/`、`/dsh-pocket-kit/` | 中文（默认） |
+| `/en/`、`/en/dsh-decision-engine/`、`/en/dsh-model-flatmap/`、`/en/dsh-pocket-kit/` | English |
 
 无尾斜杠的目录访问返回 308。每页都有 `canonical` + 双向 `hreflang`，
 导航右侧是「中文 / English」按钮与太阳/月亮主题按钮。
@@ -187,7 +187,7 @@ base64 文本并打 `bin:1` 标记，运行时先 `atob` 还原成字节再交�
 ## 加一个新项目
 
 1. 在 `build.mjs` 里加一段 `xxxBody`（中文）并写进 `dist/xxx/index.html`；英文版放 `lib/content-en.mjs` 的 `xxxBodyEn`，由 `build.mjs` 顶部 import；
-2. 在首页 `indexBody`（中文）与 `indexBodyEn`（英文）的 `<div class="projects">` 里各加一个 `<a class="project">` 条目（结构见现有两条），并在 `partials.mjs` 里给它画一个图标；
+2. 在首页 `indexBody`（中文）与 `indexBodyEn`（英文）的 `<div class="projects">` 里各加一个 `<a class="project">` 条目（结构见现有条目），并在 `partials.mjs` 里给它画一个图标；
 3. 导航不列举插件：插件入口就在首页的索引卡片里，子页自动带一条返回首页的链接，`build.mjs` 的 `navLinksFor` 无需改动；
 4. `make-bundle.mjs` 会从 `dist/` 自动推导目录重定向列表（含 `/xxx`、`/en/xxx`），无需手动加 `DIRS`。
 

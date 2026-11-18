@@ -3,8 +3,8 @@ import { mkdir, writeFile, copyFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { nav, footer, codeBlock, table, figure, fact, DECISION_ICON, FLATMAP_ICON, esc } from "./lib/partials.mjs";
-import { indexBodyEn, pluginBodyEn, flatmapBodyEn } from "./lib/content-en.mjs";
+import { nav, footer, codeBlock, table, figure, fact, DECISION_ICON, FLATMAP_ICON, POCKETKIT_ICON, esc } from "./lib/partials.mjs";
+import { indexBodyEn, pluginBodyEn, flatmapBodyEn, pocketkitBodyEn } from "./lib/content-en.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(HERE, "dist");
@@ -88,7 +88,7 @@ const indexBody = `
 
 <section class="wrap">
   <h2>收录的插件</h2>
-  <p class="sub">目前 2 个。点标题进入各自的介绍页。</p>
+  <p class="sub">目前 3 个。点标题进入各自的介绍页。</p>
 
   <div class="projects">
     <a class="project" href="/dsh-decision-engine/">
@@ -120,6 +120,24 @@ const indexBody = `
         <div class="toc">
           <span class="badge green">平铺无二级菜单</span>
           <span class="badge blue">可筛选 · 可改名</span>
+          <span class="badge gray">MIT</span>
+        </div>
+      </div>
+      <span class="go">查看介绍 →</span>
+    </a>
+
+    <a class="project" href="/dsh-pocket-kit/">
+      ${POCKETKIT_ICON}
+      <div>
+        <h3>dsh-pocket-kit</h3>
+        <p>
+          口袋工具箱：一组互相独立的小功能装进同一个插件，每个功能在设置页有各自的开关
+          （默认全开，关掉即回原生）。已实装两件——目录选择器钉在应用内 browse 面板
+          （免重启可关），以及失败轮次吞掉输入的找回横幅（放回 / 复制 / 忽略）。
+        </p>
+        <div class="toc">
+          <span class="badge green">逐功能独立开关</span>
+          <span class="badge blue">关掉即还原原生</span>
           <span class="badge gray">MIT</span>
         </div>
       </div>
@@ -635,6 +653,151 @@ const flatmapBody = `
 `;
 
 /* ------------------------------------------------------------------ *
+ * pocket-kit 插件页（中文）
+ * ------------------------------------------------------------------ */
+
+const pocketkitBody = `;
+<div class="wrap hero">
+  <span class="eyebrow"><span class="dot"></span> DeepSeek Harness 插件 · MIT</span>
+  <h1>dsh-pocket-kit</h1>
+  <p class="lede">
+    <strong>口袋工具箱</strong>：一组互相独立的小功能，装进同一个插件——每个功能在设置页
+    有各自的开关（默认全开），关掉就是原生行为。已实装两件：把「添加工作区」的目录选择
+    钉在应用内 browse 面板（换代理、换 SSH 启动方式也不再弹系统文件面板，关掉免重启）；
+    把失败轮次吞掉的输入找回来（放回 / 复制 / 忽略）。
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="#install">安装</a>
+    <a class="btn" href="#what">它是什么</a>
+    <a class="btn" href="https://github.com/zuosus/dsh-pocket-kit">GitHub</a>
+  </div>
+  <div class="toc">
+    <a href="#what">它是什么</a>
+    <a href="#features">功能</a>
+    <a href="#install">安装</a>
+    <a href="#layout">目录结构</a>
+    <a href="#dev">开发</a>
+  </div>
+</div>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="what">
+  <h2>它是什么</h2>
+  <p class="sub">
+    不是单功能插件，而是一个<strong>小功能合集</strong>：宿主按 <code>lib/features/</code>
+    里的注册表安装启用的功能，客户端提供「口袋工具箱 / Pocket Kit」设置页——注册表里
+    一行一个开关，全部 volatile，改完即生效。
+  </p>
+
+  <div class="stats">
+    <div class="stat"><span class="n">2</span><span class="l">个已实装功能</span></div>
+    <div class="stat"><span class="n">1</span><span class="l">个开关 / 功能</span></div>
+    <div class="stat"><span class="n">0</span><span class="l">需要重启的开关</span></div>
+    <div class="stat"><span class="n">3</span><span class="l">步加一个新功能</span></div>
+  </div>
+
+  <div class="facts">
+    ${fact("互相独立", "功能之间零依赖：关掉任何一个，其余照常工作；所有开关都关，行为就回到没装这个插件的样子。")}
+    ${fact("两块交付", "<code>cordis.patch.yml</code> 负责启动 composition（目录选择器由此钉住）；<code>lib/index.js</code> + <code>lib/client.js</code> 是普通的 Host + Client 插件行，客户端另出设置页与恢复横幅。")}
+    ${fact("不写配置文件", "切换目录选择器用 <code>ctx.loader.create</code> / <code>loader.remove</code> 换内存里 root tree 的行——和原生 auto 选择器同一套机制，不动任何配置文件。")}
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="features">
+  <h2>功能</h2>
+
+  <h3>inputRecovery · 找回被吞掉的输入</h3>
+  <p class="sub">
+    一条输入进入回合时会被<strong>记录两次</strong>：浏览器发出时插入 Agent inbox，回合开跑前
+    被认领。而对话里的气泡来自第三个事件 <code>user/message</code>，AgentLoop 要到回合处理
+    开始才记它。回合死得更早时——插件在工具接线抛错、provider 第一步就炸、进程中途退出——
+    日志里有认领、有失败，唯独没有那条消息：界面上输入被吞了，其实它在会话日志里完好无损。
+  </p>
+  <p class="sub">开着这个功能时：</p>
+  <div class="facts">
+    ${fact("盯事件流", "宿主监听 live 的 <code>session/event</code>，记住 inbox 插入过哪些人类消息、哪条被本回合认领；回合以 <code>error</code> / <code>interrupted</code> / <code>aborted</code> 结束且从未记入认领消息时，存下文本与失败原因。")}
+    ${fact("重启不丢", "记录落在 <code>~/.dsh/dsh-pocket-kit/recovered-input.json</code>，宿主重启不会丢掉待找回的一条。")}
+    ${fact("三条动作", "输入框上方出现恢复横幅：<strong>放回</strong>经会话自己的输入 actions 还原真实草稿（撤销栈也在）；<strong>复制</strong>走剪贴板兜底；<strong>忽略</strong>清除记录。")}
+  </div>
+  <p class="sub">页面经两条同源路由取数，栅栏与「在应用内打开」路由同一套（Host/Origin + 登录 cookie）：</p>
+  ${codeBlock("GET  /dsh-pocket-kit/recovered-input?session=<id>")}
+  ${codeBlock("POST /dsh-pocket-kit/recovered-input/ack   { session, ids }")}
+
+  <h3>pinBrowsePicker · 钉住目录选择器</h3>
+  <p class="sub">
+    「添加工作区」把流程交给占用 workspace <code>directoryFlow</code> 席位的后端。出厂的
+    auto 选择器<strong>每次启动只采样一次</strong>：受信任主机含非回环 authority、绑定地址
+    非回环、或在 SSH 里 → 应用内 browse 面板；macOS / Windows、有图形会话的 Linux →
+    系统原生面板。采样只发生在启动，所以代理改写 bind/authority、Clash fake-ip、
+    换一种 SSH 启动方式，都会让下一次启动忽然弹出访达而不是内置文件管理器。
+  </p>
+  <div class="facts">
+    ${fact("开关开（默认）", "补丁停用 auto 行，直接 compose 内置 browse 后端与它的 client surface：目录选择恒为应用内面板。")}
+    ${fact("开关关", "运行时把出厂 auto 选择器原样挂回——与没装本插件时完全一致。<strong>免重启、不改任何配置文件</strong>；配置是 volatile 的，拨完立刻生效。")}
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="install">
+  <h2>安装</h2>
+  <p class="sub">本包是一个 DSH <strong>bundle</strong>，不走 npm 发布（<code>private: true</code>）：把本地 checkout 以 <code>link:</code> 依赖链进 profile，再重启 DSH。</p>
+  <div class="facts">
+    ${fact("1 · 依赖", "在 <code>~/.dsh/profiles/&lt;profile&gt;/package.json</code> 的 <code>dependencies</code> 加一行 <code>&quot;dsh-pocket-kit&quot;: &quot;link:/path/to/dsh-pocket-kit&quot;</code>。")}
+    ${fact("2 · bundles", "把 <code>&quot;dsh-pocket-kit&quot;</code> 加进同一文件的 <code>dsh.profile.bundles</code>。")}
+    ${fact("3 · 装 + 重启", "在 profile 目录跑 <code>npm install</code>（或把符号链接直接放进 profile 的 <code>node_modules/</code>），然后重启 DSH。")}
+  </div>
+  <div class="note ok">
+    <strong>之后就不用来回重启了。</strong>随包的 <code>cordis.patch.yml</code> 只在启动时钉住
+    browse 选择器；功能开关全是 volatile，设置页拨动即时生效（Client 侧改动重载页面即生效）。
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="layout">
+  <h2>目录结构</h2>
+  <p class="sub">一个功能一个模块，注册表与配置声明各一处。</p>
+  ${table(
+    ["路径", "用途"],
+    [
+      ["<code>lib/index.js</code>", "宿主入口：Config 声明与已启用功能的安装。"],
+      ["<code>lib/features/index.js</code>", "<code>FEATURES</code> 注册表（宿主侧）。"],
+      ["<code>lib/features/input-recovery.js</code>", "找回被吞输入的本体。"],
+      ["<code>lib/features/pin-browse-picker.js</code>", "目录选择器钉住的运行时挂/摘。"],
+      ["<code>lib/client.js</code>", "客户端：设置页与恢复横幅。"],
+      ["<code>cordis.patch.yml</code>", "启动 composition 补丁：browse 选择器由此钉住。"],
+      ["<code>locale/en.json</code> / <code>locale/zh.json</code>", "英文 / 简体中文文案与元数据。"],
+      ["<code>test/</code>", "由最小 hook 运行时驱动的测试套件。"],
+      ["<code>docs/DETAIL.md</code>", "详细行为规格。"],
+    ]
+  )}
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="dev">
+  <h2>开发</h2>
+  <p class="sub">纯 ES 模块，无需构建步骤。</p>
+  ${codeBlock("npm test")}
+  <p class="sub">
+    七套测试（host / config / client / render / banner / pin-switch / resolve），
+    本地 checkout 实测全绿（2026-11-19）。加一个新功能只要三步：<code>lib/features/&lt;id&gt;.js</code>
+    导出 <code>apply(ctx, enabled)</code>、宿主与客户端两张 <code>FEATURES</code> 表各加一行、
+    <code>Config</code> 加一个 <code>z.boolean().default(true).volatile()</code>——
+    设置页从 Config 声明自动认到新开关，页面代码不用改。
+  </p>
+  <p class="sub">
+    完整行为规格见
+    <a href="https://github.com/zuosus/dsh-pocket-kit/blob/main/docs/DETAIL.md">docs/DETAIL.md</a>。
+  </p>
+</section>
+`;
+
+/* ------------------------------------------------------------------ *
  * 渲染
  * ------------------------------------------------------------------ */
 
@@ -660,6 +823,8 @@ await mkdir(path.join(DIST, "dsh-decision-engine"), { recursive: true });
 await mkdir(path.join(DIST, "dsh-model-flatmap"), { recursive: true });
 await mkdir(path.join(DIST, "en", "dsh-decision-engine"), { recursive: true });
 await mkdir(path.join(DIST, "en", "dsh-model-flatmap"), { recursive: true });
+await mkdir(path.join(DIST, "dsh-pocket-kit"), { recursive: true });
+await mkdir(path.join(DIST, "en", "dsh-pocket-kit"), { recursive: true });
 
 await copyFile(path.join(HERE, "assets/style.css"), path.join(DIST, "assets/style.css"));
 await copyFile(path.join(HERE, "assets/app.js"), path.join(DIST, "assets/app.js"));
@@ -671,7 +836,7 @@ for (const img of ["promo.jpeg", "shot-config.png", "shot-decisions.png", "shot-
   await copyFile(path.join(HERE, "assets", img), path.join(DIST, "assets", img));
 }
 
-// 中文（默认）与英文各两页；alt 互相指认，hreflang 与导航语言按钮共用。
+// 中文（默认）与英文各四页（首页 + 三个插件页）；alt 互相指认，hreflang 与导航语言按钮共用。
 const ZH_HOME = { lang: "zh-CN", self: "/", alt: { path: "/en/", label: "English" } };
 const ZH_PROJ = {
   lang: "zh-CN",
@@ -694,12 +859,22 @@ const EN_FLATMAP = {
   self: "/en/dsh-model-flatmap/",
   alt: { path: "/dsh-model-flatmap/", label: "中文" },
 };
+const ZH_POCKETKIT = {
+  lang: "zh-CN",
+  self: "/dsh-pocket-kit/",
+  alt: { path: "/en/dsh-pocket-kit/", label: "English" },
+};
+const EN_POCKETKIT = {
+  lang: "en",
+  self: "/en/dsh-pocket-kit/",
+  alt: { path: "/dsh-pocket-kit/", label: "中文" },
+};
 
 await writeFile(
   path.join(DIST, "index.html"),
   page(
     "dsh.zuos.us — DeepSeek Harness 插件索引",
-    "dsh.zuos.us 收录的 DeepSeek Harness 插件索引：dsh-decision-engine 与 dsh-model-flatmap 的介绍与安装入口。",
+    "dsh.zuos.us 收录的 DeepSeek Harness 插件索引：dsh-decision-engine、dsh-model-flatmap 与 dsh-pocket-kit 的介绍与安装入口。",
     indexBody,
     ZH_HOME
   )
@@ -719,7 +894,7 @@ await writeFile(
   path.join(DIST, "en/index.html"),
   page(
     "dsh.zuos.us — DeepSeek Harness plugin index",
-    "An index of DeepSeek Harness plugins on dsh.zuos.us: guides and install links for dsh-decision-engine and dsh-model-flatmap.",
+    "An index of DeepSeek Harness plugins on dsh.zuos.us: guides and install links for dsh-decision-engine, dsh-model-flatmap and dsh-pocket-kit.",
     indexBodyEn,
     EN_HOME
   )
@@ -752,6 +927,26 @@ await writeFile(
     "A flat, two-level-free model picker for DeepSeek Harness: replaces the composer model control with one surface where every model and reasoning level is visible at once, no nested popovers. Cross-provider search, by-provider / by-family grouping, strike-through on out-of-balance models. Browser-only, no build step.",
     flatmapBodyEn,
     EN_FLATMAP
+  )
+);
+
+await writeFile(
+  path.join(DIST, "dsh-pocket-kit/index.html"),
+  page(
+    "dsh-pocket-kit — DSH 口袋工具箱",
+    "DSH 口袋工具箱：一组互相独立的小功能装进一个插件，每个功能一个开关、默认开启、关掉即回原生。已实装：目录选择器钉在应用内 browse 面板，失败轮次吞掉的输入可原样找回。",
+    pocketkitBody,
+    ZH_POCKETKIT
+  )
+);
+
+await writeFile(
+  path.join(DIST, "en/dsh-pocket-kit/index.html"),
+  page(
+    "dsh-pocket-kit — a pocket toolkit for DeepSeek Harness",
+    "A pocket toolkit for DeepSeek Harness: independent small features in one plugin, each with its own switch, on by default. Live today: pin the workspace directory picker to the in-app browse backend, and recover prompts a failed turn swallowed.",
+    pocketkitBodyEn,
+    EN_POCKETKIT
   )
 );
 
