@@ -15,6 +15,8 @@ site/
   wrangler.jsonc       Workers Builds 的配置（name / main / build.command）
   lib/partials.mjs     共用 HTML 片段（导航含主题按钮 + 语言按钮；站点图标、figure/fact 片段）
   lib/content-en.mjs   英文版页面内容（章节 id 与中文版一致）
+                        功能描述（决策点数量、子代理模型等）改这里 + build.mjs 的中文段落，
+                        两处必须同步；根目录 README.md / README.zh.md 是另一份摘要，也要对齐
   assets/style.css     样式（light/dark 双调色板；少卡片，用留白与细分隔线分层）
   assets/theme.js      <head> 同步落 data-theme，防主题闪白
   assets/app.js        交互（命令块复制、主题切换）

@@ -97,7 +97,7 @@ const indexBody = `
         <h3>dsh-decision-engine</h3>
         <p>
           主模型动手前，用一个便宜的小模型做判断，决定放行、询问、拦截，
-          或换便宜模型、跳过一次昂贵调用。八个决策点逐个可切换。
+          或换便宜模型、跳过一次昂贵调用。九个决策点逐个可切换，派生子代理时还由决策模型自己挑模型。
         </p>
         <div class="toc">
           <span class="badge green">默认只观察</span>
@@ -159,34 +159,41 @@ const pointsTable = table(
     ],
     [
       "4",
+      "<strong>子代理模型</strong>",
+      "<code>tools/pre-execute</code> → <code>agent/created</code>",
+      "每次派生只问一次；lead 显式指定、或候选只有当前路由时不问",
+      "决策模型在宿主已授权路由里自己挑模型与推理强度，无需配置",
+    ],
+    [
+      "5",
       "<strong>上下文压缩</strong>",
       "<code>agent/pre-step</code> → <code>ctx.compaction</code>",
       "仅实测 token 达触发线 ×70%",
       "省掉一次摘要调用",
     ],
     [
-      "5",
+      "6",
       "<strong>轮次延续</strong>",
       "<code>agent/turn-stopping</code>",
       "同一轮最多续一次",
       "避免空转一整轮",
     ],
     [
-      "6",
+      "7",
       "<strong>检索必要性</strong>",
       "<code>tools/pre-execute</code>",
       "仅检索类工具；其余工具零开销",
       "省搜索与结果 token",
     ],
     [
-      "7",
+      "8",
       "<strong>技能选择</strong>",
       "<code>tools/pre-execute</code>",
       "仅 <code>skill</code> 工具且候选非空",
       "省 2–5k / 次误加载",
     ],
     [
-      "8",
+      "9",
       "<strong>思维链翻译门槛</strong>",
       "<code>cotTranslation.translate()</code>",
       "本地预筛 + 同文本缓存",
@@ -266,7 +273,7 @@ const pluginBody = `
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">安装</a>
-    <a class="btn" href="#points">八个决策点</a>
+    <a class="btn" href="#points">九个决策点</a>
     <a class="btn" href="https://github.com/zuosus/dsh-decision-engine">GitHub</a>
   </div>
   ${codeBlock("dsh plugin add dsh-decision-engine")}
@@ -290,20 +297,21 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine 宣传图", "主模型动手
   <h2>它是什么</h2>
   <p class="sub">
     一个便宜的<strong>判断层</strong>：一次约 1.9k token 的小模型调用，
-    去替代或阻止更贵的 LLM 开销。八个决策点全部实装，逐个可切换。
+    去替代或阻止更贵的 LLM 开销。九个决策点全部实装，逐个可切换。
   </p>
 
   <div class="stats">
-    <div class="stat"><span class="n">8</span><span class="l">个决策点，全部实装</span></div>
+    <div class="stat"><span class="n">9</span><span class="l">个决策点，全部实装</span></div>
     <div class="stat"><span class="n">~1.9k</span><span class="l">token / 次决策</span></div>
     <div class="stat"><span class="n">0.5s</span><span class="l">p50 延迟</span></div>
     <div class="stat"><span class="n">shadow</span><span class="l">默认只记录不生效</span></div>
   </div>
 
-  ${figure("/assets/shot-config.png", "配置页：八个决策点逐个切换三态", "配置页：每个决策点有 关闭 / 观察 / 生效 三态，改完即保存")}
+  ${figure("/assets/shot-config.png", "配置页：九个决策点逐个切换三态", "配置页：每个决策点有 关闭 / 观察 / 生效 三态，改完即保存")}
 
   <div class="facts">
     ${fact("四个问题", "风险 · 可逆性 · 任务相关性 · 注入嫌疑。答案被解析成 <code>allow</code> / <code>ask</code> / <code>deny</code>，需要时还能替换模型、注入提示、跳过一次检索。")}
+    ${fact("子代理自己挑模型", "派生 subagent 时，决策模型在宿主已授权的路由里自己挑一个模型与推理强度，取代「原样继承 lead」的默认行为；用户不必为它再配一张阶梯表。候选里始终含 lead 当前路由，所以「继承」永远是合法选项。")}
     ${fact("克制的介入", "只在「替代更贵的调用」或「阻止更大的开销」处介入；热路径上的点都带触发闸，绝不为了多一道检查而介入。")}
     ${fact("接任意端点", "请求只有一个形状：<code>{ model, state, questions, think_mode }</code> 发过去，拿回 <code>answers</code>。内置多个 provider 预设，也能填任意 <code>custom</code> base URL。")}
   </div>
@@ -350,7 +358,7 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine 宣传图", "主模型动手
 <div class="wrap"><hr class="rule"></div>
 
 <section class="wrap" id="points">
-  <h2>八个决策点</h2>
+  <h2>九个决策点</h2>
   <p class="sub">全部实装，由你决定让决策模型进入哪些环节。挂载的 hook 只是实现细节。</p>
   ${pointsTable}
 
@@ -434,9 +442,9 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine 宣传图", "主模型动手
   ${table(
     ["命令", "覆盖"],
     [
-      ["<code>pnpm test</code>", "209 项单元测试：纯函数 + 适配器接线 + providers + 配置往返 + 设置界面渲染 + 缓存回归"],
+      ["<code>pnpm test</code>", "单元测试：纯函数 + 适配器接线 + providers + 配置往返 + 设置界面渲染 + 缓存回归"],
       ["<code>pnpm verify:wiring</code>", "用真实 schemastery 加载插件，确认宿主确实给了这个服务"],
-      ["<code>pnpm verify:endpoint</code>", "8 个决策点逐个打真实端点，校验题型与答案形状"],
+      ["<code>pnpm verify:endpoint</code>", "9 个决策点逐个打真实端点，校验题型与答案形状"],
     ]
   )}
   <div class="note warn">
@@ -662,7 +670,7 @@ await writeFile(
   path.join(DIST, "dsh-decision-engine/index.html"),
   page(
     "dsh-decision-engine — 给 DeepSeek Harness 的决策层",
-    "便宜的决策层：在主模型动手前，把当前状态与一组结构化问题发给小的决策模型，用它的概率化答案决定放行、询问、拦截、换模型或跳过。八个决策点全部已实装，默认 shadow 只记录不打断。",
+    "便宜的决策层：在主模型动手前，把当前状态与一组结构化问题发给小的决策模型，用它的概率化答案决定放行、询问、拦截、换模型或跳过。九个决策点全部已实装，派生子代理时还由决策模型自己挑模型。默认 shadow 只记录不打断。",
     pluginBody,
     ZH_PROJ
   )
@@ -682,7 +690,7 @@ await writeFile(
   path.join(DIST, "en/dsh-decision-engine/index.html"),
   page(
     "dsh-decision-engine — a judgement layer for DeepSeek Harness",
-    "A cheap judgement layer for DeepSeek Harness: sends state plus a set of structured questions to a small decision model and uses the probability-bearing answers to allow, ask, block, reroute or skip. All eight decision points implemented; shadow mode by default.",
+    "A cheap judgement layer for DeepSeek Harness: sends state plus a set of structured questions to a small decision model and uses the probability-bearing answers to allow, ask, block, reroute or skip. All nine decision points implemented; the decision model also picks models for spawned subagents. Shadow mode by default.",
     pluginBodyEn,
     EN_PROJ
   )

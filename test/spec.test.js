@@ -87,9 +87,11 @@ test("每个规格的 build 产出 state 与非空 questions", () => {
       task: "调研 dsh 的 subagent 生命周期",
       description: "research",
       depth: 1,
-      ladder: ["p/cheap", "p/strong"],
-      parent: "p/strong",
-      efforts: [],
+      routes: [
+        { provider: "cheap", model: "flash" },
+        { provider: "strong", model: "pro" },
+      ],
+      current: { provider: "strong", model: "pro" },
       recent: "",
     },
   };

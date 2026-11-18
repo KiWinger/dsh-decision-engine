@@ -97,34 +97,41 @@ const pointsTableEn = table(
     ],
     [
       "4",
+      "<strong>Subagent model</strong>",
+      "<code>tools/pre-execute</code> → <code>agent/created</code>",
+      "One judgement per spawn; skipped when the lead names a route explicitly or only one candidate exists",
+      "The decision model picks the subagent's model and reasoning effort from host-authorized routes — no extra configuration",
+    ],
+    [
+      "5",
       "<strong>Context compaction</strong>",
       "<code>agent/pre-step</code> → <code>ctx.compaction</code>",
       "Only when measured tokens reach 70% of the trigger line",
       "Skips one summarisation call",
     ],
     [
-      "5",
+      "6",
       "<strong>Turn continuation</strong>",
       "<code>agent/turn-stopping</code>",
       "At most one steer per turn",
       "Avoids a wasted full turn",
     ],
     [
-      "6",
+      "7",
       "<strong>Retrieval necessity</strong>",
       "<code>tools/pre-execute</code>",
       "Retrieval tools only; zero overhead for everything else",
       "Saves search and result tokens",
     ],
     [
-      "7",
+      "8",
       "<strong>Skill selection</strong>",
       "<code>tools/pre-execute</code>",
       "Only the <code>skill</code> tool, and only with a non-empty candidate list",
       "Saves 2–5k per wrong load",
     ],
     [
-      "8",
+      "9",
       "<strong>COT translation gate</strong>",
       "<code>cotTranslation.translate()</code>",
       "Local pre-filter + same-text cache",
@@ -219,7 +226,7 @@ export const pluginBodyEn = `
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">Install</a>
-    <a class="btn" href="#points">Eight decision points</a>
+    <a class="btn" href="#points">Nine decision points</a>
     <a class="btn" href="https://github.com/zuosus/dsh-decision-engine">GitHub</a>
   </div>
   ${codeBlock("dsh plugin add dsh-decision-engine")}
@@ -248,16 +255,17 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine promo image", "A small model
   </p>
 
   <div class="stats">
-    <div class="stat"><span class="n">8</span><span class="l">decision points, all implemented</span></div>
+    <div class="stat"><span class="n">9</span><span class="l">decision points, all implemented</span></div>
     <div class="stat"><span class="n">~1.9k</span><span class="l">tokens per decision</span></div>
     <div class="stat"><span class="n">0.5s</span><span class="l">p50 latency</span></div>
     <div class="stat"><span class="n">shadow</span><span class="l">default: record only</span></div>
   </div>
 
-  ${figure("/assets/shot-config.png", "Config page: eight decision points with tri-state toggles", "Config page: each decision point has off / observe / enforce; edits save immediately")}
+  ${figure("/assets/shot-config.png", "Config page: nine decision points with tri-state toggles", "Config page: each decision point has off / observe / enforce; edits save immediately")}
 
   <div class="facts">
     ${fact("Four questions", "Risk · reversibility · task relevance · injection suspicion. The answer is parsed into <code>allow</code> / <code>ask</code> / <code>deny</code>, plus swapping the model, injecting a hint, or skipping a retrieval where needed.")}
+    ${fact("Subagents pick their own model", "When a subagent is spawned, the decision model picks its model and reasoning effort from the routes the host already authorizes — replacing the default that inherits the lead's route verbatim. No ladder to configure: the lead's current route is always among the candidates, so inheriting stays a valid answer.")}
     ${fact("Restrained", "Only replace a more expensive call, or prevent a bigger expense. Hot-path points all carry trigger gates — never a check for its own sake.")}
     ${fact("Any endpoint", "One request shape: <code>{ model, state, questions, think_mode }</code> in, <code>answers</code> out. Built-in provider presets, or any <code>custom</code> base URL.")}
   </div>
@@ -305,7 +313,7 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine promo image", "A small model
 <div class="wrap"><hr class="rule"></div>
 
 <section class="wrap" id="points">
-  <h2>Eight decision points</h2>
+  <h2>Nine decision points</h2>
   <p class="sub">All implemented — you decide which ones the decision model joins. Hooks are implementation details.</p>
   ${pointsTableEn}
 
@@ -399,7 +407,7 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine promo image", "A small model
   ${table(
     ["Command", "Covers"],
     [
-      ["<code>pnpm test</code>", "209 unit tests: pure functions + adapter wiring + providers + config round-trip + settings UI rendering + cache regressions"],
+      ["<code>pnpm test</code>", "Unit tests: pure functions + adapter wiring + providers + config round-trip + settings UI rendering + cache regressions"],
       ["<code>pnpm verify:wiring</code>", "Loads the plugin with the real schemastery and confirms the host provides the service"],
       ["<code>pnpm verify:endpoint</code>", "Hits the real endpoint once per decision point, validating question shape and answer parsing"],
     ]

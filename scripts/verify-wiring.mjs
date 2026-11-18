@@ -198,31 +198,34 @@ for (const id of ["route", "delegate", "spawnModel", "compact", "turnStop", "ret
   check("translator.translate 已被包装", typeof ctx.get("translator").translate === "function");
 }
 
-// ---- 子代理模型阶梯：配置键 + 工具注册 -----------------------------------
+// ---- 子代理模型：配置键 + 工具注册 -------------------------------------
 //
-// 这一节校验的是「新功能的接线真的接上了」，而不只是文件存在。少一个
-// schema 键 = 用户填了存不下去；工具没注册 = 模型看不到它，而两者的
-// 表现都是静默的。
+// 候选清单来自宿主已有信息，用户不再为本插件配置路由；这里只校验候选上限
+// 与工具注册真的接上了。少一个 schema 键 = 用户填了存不下去；工具没注册
+// = 模型看不到它，而两者的表现都是静默的。
 for (const key of [
-  "spawnModelLadder",
+  "spawnModelMaxCandidates",
   "spawnModelTools",
-  "spawnModelMaxScore",
-  "spawnModelFidelityFloor",
   "spawnModelTaskChars",
   "pointSpawnModel",
 ]) {
-  check(`Config 含子代理阶梯键 ${key}`, Object.hasOwn(defaults, key), `实际 ${String(defaults[key])}`);
+  check(`Config 含子代理模型键 ${key}`, Object.hasOwn(defaults, key), `实际 ${String(defaults[key])}`);
 }
 check(
-  "子代理阶梯默认空表（升级后行为不变）",
-  Array.isArray(defaults.spawnModelLadder) && defaults.spawnModelLadder.length === 0,
-  `实际 ${JSON.stringify(defaults.spawnModelLadder)}`,
+  "子代理模型默认候选上限为 12",
+  defaults.spawnModelMaxCandidates === 12,
+  `实际 ${String(defaults.spawnModelMaxCandidates)}`,
 );
 check(
-  "子代理阶梯默认覆盖 subagent 工具",
+  "子代理模型默认覆盖 subagent 工具",
   Array.isArray(defaults.spawnModelTools) && defaults.spawnModelTools.includes("subagent"),
   `实际 ${JSON.stringify(defaults.spawnModelTools)}`,
 );
+// 用户不该再为本插件配置路由：旧阶梯键必须彻底移除，否则配置页残留的
+// 输入框会让人以为还要再填一遍。
+for (const removed of ["spawnModelLadder", "spawnModelMaxScore", "spawnModelFidelityFloor"]) {
+  check(`已移除旧的阶梯配置键 ${removed}`, !Object.hasOwn(defaults, removed));
+}
 
 // 带 llm + tools 服务时，三个模型可调用工具必须注册上。
 {

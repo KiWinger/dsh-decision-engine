@@ -273,31 +273,30 @@ pointDelegate: off
 # delegateBlockingFloor: 0.6    # 被本地事实阻塞时继续内联
 # delegateParallelFloor: 0.5    # 组队还需真并行才有意义
 
-# ---- 3b. 子代理模型阶梯：派生 subagent 时用哪个模型 -------------------------
+# ---- 3b. 子代理模型：派生 subagent 时用哪个模型 -----------------------------
 # 非热路径。每次派生只问一次，且只在子代理确实会派生时才问。
 #
 # 它取代的是宿主「子代理原样继承 lead 的 provider / model / 推理强度」这条默认
 # 行为。那个默认值只对「lead 自己也在做同类工作」成立：让强模型去调研是浪费，
 # 让便宜档去改关键代码是返工。
 #
+# 决策模型**自己**在候选里挑一个模型和推理强度。候选来自宿主已有的信息，
+# 用户不需要为本插件配置任何路由：
+#   1. 宿主会话的 subagent/model-selection-policy — 你在 DSH 设置里已经配好的
+#      「允许子代理使用」的路由；
+#   2. 没有该策略时，退回 llm 适配器的真实枚举；
+#   3. 都没有时只保留 lead 当前路由（= 没有可选项，本点自动不介入）。
+#
 # 三道不介入的边界（任一成立就完全不动，子代理照旧继承）：
-#   1. 阶梯留空——没有目标可下沉；
-#   2. lead 在派生调用里显式给了 provider/model——显式选择永远优先；
-#   3. 决策模型判为 keep / 降级——插件的判断是优化，不是正确性的必要条件。
+#   1. lead 在派生调用里显式给了 provider/model — 显式选择永远优先；
+#   2. 候选里只有 lead 当前路由 — 问了也只会答「继承」；
+#   3. 决策模型判 keep 或降级 — 插件的判断是优化，不是正确性的必要条件。
 #
-# 阶梯写法：从便宜到强，每项 `provider/model` 或 `provider/model/effort`。
-# effort 只在末尾是已知强度名（off/low/medium/high/max 等）时才被识别，
-# 因此 `provider/vendor/model` 这种带斜杠的 model id 不会被误读。
-#
-# 例：
-#   spawnModelLadder:
-#     - deepseek-official/deepseek-chat
-#     - deepseek-official/deepseek-reasoner/high
+# 注意：**继承永远是合法选项**。候选清单里 lead 当前路由排在第一位，模型
+# 认为任务确实需要那么强时，会主动选它。
 pointSpawnModel: off
-# spawnModelLadder: []        # 留空 = 不下沉，本点完全不介入（默认）
+# spawnModelMaxCandidates: 12  # 送给决策模型的候选数上限（lead 当前路由另算）
 # spawnModelTools: [subagent, subagent_fork]  # preset 改名时同步改这里
-# spawnModelMaxScore: 0.4     # 能力需求超过此线就不下沉，沿用 lead 的模型
-# spawnModelFidelityFloor: 0.6 # 高保真否决线；达线一律不下沉
 # spawnModelTaskChars: 1600   # 喂给决策模型的任务正文上限（字符）
 #
 # 另有两个模型可调用工具（与上面这个开关无关地常驻注册）：

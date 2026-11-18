@@ -19,17 +19,18 @@ main model acts.
 - tool authorization
 - model routing
 - delegation
-- subagent model ladder
+- subagent model selection
 - compaction
 - turn continuation
 - retrieval necessity
 - skill selection
 - COT translation gate
 
-**Subagent models**: when a subagent is spawned, the decision model picks its
-model and reasoning effort instead of the host default that inherits the lead's
-route verbatim. `list_models` / `set_model` / `list_presets` let the main agent
-choose directly, and an explicit choice outranks the automatic judgement.
+**Subagent models**: when a subagent is spawned, the decision model itself
+picks the model and reasoning effort from the routes the host already authorizes
+— replacing the default that inherits the lead's route verbatim. No route
+configuration is needed. `list_models` / `set_model` / `list_presets` let the
+main agent override explicitly, which outranks the automatic judgement.
 
 **Modes**: off · observe · enforce
 
