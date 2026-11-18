@@ -127,16 +127,6 @@ const indexBody = `
     </a>
   </div>
 </section>
-
-<section class="wrap">
-  <h2>共同约定</h2>
-  <p class="sub">这里的插件都守这几条，可以放心常驻。</p>
-  <div class="facts">
-    ${fact("fail-open", "<strong>不确定就放行。</strong>任何异常一律退回原生行为，守卫故障不会卡住工具调用。")}
-    ${fact("shadow first", "<strong>先观察，再生效。</strong>默认只记录判断，确认靠谱后才切到生效。")}
-    ${fact("cheap by design", "<strong>只省更大的开销。</strong>只为替代或阻止更贵的调用而介入。")}
-  </div>
-</section>
 `;
 
 /* ------------------------------------------------------------------ *

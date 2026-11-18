@@ -65,16 +65,6 @@ export const indexBodyEn = `
     </a>
   </div>
 </section>
-
-<section class="wrap">
-  <h2>Shared rules</h2>
-  <p class="sub">Every plugin here follows these, so they are safe to leave installed.</p>
-  <div class="facts">
-    ${fact("fail-open", "<strong>Uncertainty passes through.</strong>Any error falls back to native behavior; a failing guard never blocks a tool call.")}
-    ${fact("shadow first", "<strong>Observe, then enforce.</strong>Records judgments by default; switch to enforce only once they hold up.")}
-    ${fact("cheap by design", "<strong>Spend less, never more.</strong>Intervene only to replace or prevent a more expensive call.")}
-  </div>
-</section>
 `;
 
 /* ------------------------------------------------------------------ *
