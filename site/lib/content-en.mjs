@@ -72,7 +72,8 @@ export const indexBodyEn = `
           A pocket toolkit: independent small features in one plugin, each with its own
           switch on the Settings page, all on by default — switch one off and the native
           behaviour returns. Live today: the workspace directory picker pinned to the
-          in-app browse backend, and recovery banners for prompts a failed turn swallowed.
+          in-app browse backend (changing it takes a DSH restart), and recovery banners for
+          prompts a failed turn swallowed.
         </p>
         <div class="toc">
           <span class="badge green">One switch per feature</span>
@@ -641,8 +642,8 @@ export const pocketkitBodyEn = `;
     A <strong>pocket toolkit</strong>: independent small features in one plugin, each with
     its own switch on the Settings page — all on by default, and switching one off brings
     the native behaviour straight back. Two are live: pinning the workspace directory
-    picker to the in-app browse backend (no restart to undo), and recovering the prompt a
-    failed turn swallowed (restore / copy / dismiss).
+    picker to the in-app browse backend (changing it takes a DSH restart), and recovering the
+    prompt a failed turn swallowed (restore / copy / dismiss).
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">Install</a>
@@ -665,21 +666,22 @@ export const pocketkitBodyEn = `;
   <p class="sub">
     Not a single-purpose plugin but a <strong>collection</strong>: the host installs the
     enabled features from the <code>lib/features/</code> registry, and the client ships a
-    Pocket Kit settings page — one switch per registry row, every one volatile, so a
-    change takes effect immediately.
+    Pocket Kit settings page — one switch per registry row, all volatile (no config file is
+    touched). Recovery switches take effect immediately; the picker is decided at boot, so a
+    change there takes effect after you restart DSH.
   </p>
 
   <div class="stats">
     <div class="stat"><span class="n">2</span><span class="l">features live</span></div>
     <div class="stat"><span class="n">1</span><span class="l">switch per feature</span></div>
-    <div class="stat"><span class="n">0</span><span class="l">switches needing a restart</span></div>
+    <div class="stat"><span class="n">1</span><span class="l">switch needing a restart</span></div>
     <div class="stat"><span class="n">3</span><span class="l">steps to add a feature</span></div>
   </div>
 
   <div class="facts">
     ${fact("Mutually independent", "No feature depends on another: switch one off and the rest keep working; switch all off and behaviour is exactly as if the plugin were not installed.")}
     ${fact("Two delivery halves", "<code>cordis.patch.yml</code> pins the boot composition (the directory picker); <code>lib/index.js</code> plus <code>lib/client.js</code> are a normal Host + Client plugin row — the client adds the settings page and the recovery banner.")}
-    ${fact("No config files rewritten", "Toggling the picker swaps rows on the in-memory root tree with <code>ctx.loader.create</code> / <code>loader.remove</code> — the same mechanism the stock auto picker uses.")}
+    ${fact("No config files rewritten", "Switches are volatile — stored in Settings, never written to disk. The picker's Host backend and Client surface are mounted as a pair at boot, so a change there takes effect at the next DSH restart.")}
   </div>
 </section>
 
@@ -719,7 +721,7 @@ export const pocketkitBodyEn = `;
   </p>
   <div class="facts">
     ${fact("Switch on (default)", "The patch disables the auto row and composes the browse backend plus its client surface directly: the picker is always the in-app panel.")}
-    ${fact("Switch off", "The stock auto selector is remounted at runtime — exactly the behaviour you would get without this plugin. No restart, no config file touched; the setting is volatile.")}
+    ${fact("Switch off", "The stock auto selector is remounted at boot — exactly the behaviour you would get without this plugin. Takes a DSH restart; no config file touched, the setting is volatile.")}
   </div>
 </section>
 
@@ -734,9 +736,10 @@ export const pocketkitBodyEn = `;
     ${fact("3 · install + restart", "Run <code>npm install</code> in the profile directory (or drop a symlink into its <code>node_modules/</code>), then restart DSH.")}
   </div>
   <div class="note ok">
-    <strong>Only the first install needs the restart.</strong> The bundled
-    <code>cordis.patch.yml</code> pins the browse picker at boot; every feature switch is
-    volatile and takes effect without another one.
+    <strong>No restart for the recovery switch after install.</strong> The bundled
+    <code>cordis.patch.yml</code> pins the browse picker at boot: that switch is decided at
+    startup, so changing it takes a DSH restart; the other feature switches are volatile and
+    take effect without one.
   </div>
 </section>
 

@@ -133,7 +133,7 @@ const indexBody = `
         <p>
           口袋工具箱：一组互相独立的小功能装进同一个插件，每个功能在设置页有各自的开关
           （默认全开，关掉即回原生）。已实装两件——目录选择器钉在应用内 browse 面板
-          （免重启可关），以及失败轮次吞掉输入的找回横幅（放回 / 复制 / 忽略）。
+          （改动需重启 DSH 生效），以及失败轮次吞掉输入的找回横幅（放回 / 复制 / 忽略）。
         </p>
         <div class="toc">
           <span class="badge green">逐功能独立开关</span>
@@ -663,7 +663,7 @@ const pocketkitBody = `;
   <p class="lede">
     <strong>口袋工具箱</strong>：一组互相独立的小功能，装进同一个插件——每个功能在设置页
     有各自的开关（默认全开），关掉就是原生行为。已实装两件：把「添加工作区」的目录选择
-    钉在应用内 browse 面板（换代理、换 SSH 启动方式也不再弹系统文件面板，关掉免重启）；
+    钉在应用内 browse 面板（换代理、换 SSH 启动方式也不再弹系统文件面板，改动需重启 DSH 生效）；
     把失败轮次吞掉的输入找回来（放回 / 复制 / 忽略）。
   </p>
   <div class="cta-row">
@@ -687,20 +687,21 @@ const pocketkitBody = `;
   <p class="sub">
     不是单功能插件，而是一个<strong>小功能合集</strong>：宿主按 <code>lib/features/</code>
     里的注册表安装启用的功能，客户端提供「口袋工具箱 / Pocket Kit」设置页——注册表里
-    一行一个开关，全部 volatile，改完即生效。
+    一行一个开关，配置是 volatile 的、不写任何配置文件：输入找回拨完立刻生效；目录选择器
+    在启动时决定，拨完需重启 DSH 才生效。
   </p>
 
   <div class="stats">
     <div class="stat"><span class="n">2</span><span class="l">个已实装功能</span></div>
     <div class="stat"><span class="n">1</span><span class="l">个开关 / 功能</span></div>
-    <div class="stat"><span class="n">0</span><span class="l">需要重启的开关</span></div>
+    <div class="stat"><span class="n">1</span><span class="l">需要重启的开关</span></div>
     <div class="stat"><span class="n">3</span><span class="l">步加一个新功能</span></div>
   </div>
 
   <div class="facts">
     ${fact("互相独立", "功能之间零依赖：关掉任何一个，其余照常工作；所有开关都关，行为就回到没装这个插件的样子。")}
     ${fact("两块交付", "<code>cordis.patch.yml</code> 负责启动 composition（目录选择器由此钉住）；<code>lib/index.js</code> + <code>lib/client.js</code> 是普通的 Host + Client 插件行，客户端另出设置页与恢复横幅。")}
-    ${fact("不写配置文件", "切换目录选择器用 <code>ctx.loader.create</code> / <code>loader.remove</code> 换内存里 root tree 的行——和原生 auto 选择器同一套机制，不动任何配置文件。")}
+    ${fact("不写配置文件", "开关是 volatile 的，只记在设置里、不落盘；目录选择器的 Host 后端与 Client 界面成对被选定，只能在启动时装配，改动在下次重启 DSH 生效。")}
   </div>
 </section>
 
@@ -736,7 +737,7 @@ const pocketkitBody = `;
   </p>
   <div class="facts">
     ${fact("开关开（默认）", "补丁停用 auto 行，直接 compose 内置 browse 后端与它的 client surface：目录选择恒为应用内面板。")}
-    ${fact("开关关", "运行时把出厂 auto 选择器原样挂回——与没装本插件时完全一致。<strong>免重启、不改任何配置文件</strong>；配置是 volatile 的，拨完立刻生效。")}
+    ${fact("开关关", "启动时把出厂 auto 选择器原样挂回——与没装本插件时完全一致。<strong>需重启 DSH、不改任何配置文件</strong>；配置是 volatile 的，拨完下次启动生效。")}
   </div>
 </section>
 
@@ -751,8 +752,9 @@ const pocketkitBody = `;
     ${fact("3 · 装 + 重启", "在 profile 目录跑 <code>npm install</code>（或把符号链接直接放进 profile 的 <code>node_modules/</code>），然后重启 DSH。")}
   </div>
   <div class="note ok">
-    <strong>之后就不用来回重启了。</strong>随包的 <code>cordis.patch.yml</code> 只在启动时钉住
-    browse 选择器；功能开关全是 volatile，设置页拨动即时生效（Client 侧改动重载页面即生效）。
+    <strong>装好之后，改输入找回开关不用重启。</strong>随包的 <code>cordis.patch.yml</code>
+    在启动时钉住 browse 选择器：目录选择器这个开关在启动时决定，拨动后需重启 DSH 才生效；
+    其余功能开关是 volatile，设置页拨动即时生效（Client 侧改动重载页面即生效）。
   </div>
 </section>
 
