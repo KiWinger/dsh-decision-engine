@@ -78,12 +78,10 @@ export function nav({ brand = "dsh.zuos.us", links = [], i18n = null, themeAria 
 </header>`;
 }
 
-export function footer({ repo = "https://github.com/zuosus/dsh-decision-engine" } = {}) {
+export function footer() {
   return `<footer>
   <div class="wrap">
     <span>© ${new Date().getFullYear()} zuosus</span>
-    <a href="${repo}">GitHub</a>
-    <a href="https://www.npmjs.com/package/dsh-decision-engine">npm</a>
     <span>MIT License</span>
   </div>
 </footer>`;
