@@ -1,8 +1,7 @@
 // 站点构建期共用的 HTML 片段。纯字符串拼接，无模板引擎。
 //
 // 图标：插件包里的 icon.svg 是它们自己的资产，站点不改动。
-// 站点品牌图标用社区创作的「鲸鱼娘 / 蓝色大肥鱼」形象（见 site/assets/mascot.png
-// 与 README 的署名说明）；三个插件页仍各用一枚渐变描边的自绘 SVG，风格统一。
+// 站点品牌图标是 assets/mascot.png；三个插件页各用一枚渐变描边的自绘 SVG。
 
 const GRAD = (id) => `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="3" y1="6" x2="33" y2="30">
       <stop offset="0%" stop-color="#3AC251"/>
@@ -10,7 +9,7 @@ const GRAD = (id) => `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" 
       <stop offset="100%" stop-color="#1481BF"/>
     </linearGradient>`;
 
-// 品牌：社区「鲸鱼娘 / 蓝色大肥鱼」拟人化形象，站点自有资产 PNG。
+// 品牌：站点自有 PNG 资产。
 const ICON = `<img class="brand-mascot" src="/assets/mascot.png" alt="" role="img" aria-label="dsh.zuos.us" width="28" height="28">`;
 
 // dsh-decision-engine：一个输入 → 一个判断点 → 三种处置（放行 / 询问 / 拦截）。

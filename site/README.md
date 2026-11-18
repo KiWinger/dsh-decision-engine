@@ -17,7 +17,7 @@ site/
   lib/content-en.mjs   英文版页面内容（章节 id 与中文版一致）
                         功能描述（决策点数量、子代理模型等）改这里 + build.mjs 的中文段落，
                         两处必须同步；根目录 README.md / README.zh.md 是另一份摘要，也要对齐
-  assets/mascot.png    站点品牌图标 / favicon：社区「鲸鱼娘 / 蓝色大肥鱼」形象（署名见下节）
+  assets/mascot.png    站点品牌图标 / favicon
   assets/style.css     样式（light/dark 双调色板；少卡片，用留白与细分隔线分层）
   assets/theme.js      <head> 同步落 data-theme，防主题闪白
   assets/app.js        交互（命令块复制、主题切换）
@@ -86,21 +86,6 @@ npx cf workers secrets update PROVIDER_CONFIG_TOKEN       # 可选门禁
 （键 `dsh-theme`）。`theme.js` 在 head 里同步执行，先设 `data-theme`
 再首屏绘制，避免闪白。样式表是纯 token 双调色板（`:root` 浅色、
 `[data-theme=dark]` 深色覆盖），改颜色只动变量。
-
-## 站点品牌图标（社区「鲸鱼娘 / 大肥鱼」形象）
-
-导航品牌位与 favicon 使用社区创作的 DeepSeek 拟人形象「鲸鱼娘 / 蓝色大肥鱼」：
-蓝发、鲸鱼鳍耳、女仆装的 2D 女孩，由社区二创接力形成，非 DeepSeek 官方 IP。
-
-- 图片来源：`TreapGoGo/deepseek-whale-girl` 资产库的品牌标志
-  （`characters/brand/whale-girl-logo-master.png`，整库 MIT License，
-  Copyright © 2026 TreapGoGo）；原图 1254×1254，本地裁掉透明边、等比缩到 128×128
-  存为 `assets/mascot.png`，随站点嵌入 Worker，不依赖外链。
-- 形象署名链（上游统一采用 CC BY-NC-SA 4.0，非商业二创）：
-  一创「上善」（鲸鱼娘角色原作者，pixiv.net/users/62155430）→
-  二创「ZipZipPipe」（加入 DeepSeek 元素的女仆鲸鱼娘）→
-  各下游社区再创作。此处仅作非商业站点标识使用，并保留上述署名。
-- 三个插件页的项目图标仍是自绘 SVG（见 `partials.mjs`），不受此署名链影响。
 
 ## 流程
 
