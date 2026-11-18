@@ -83,6 +83,18 @@ function loadConfig() {
 const INPUTS = {
   route: { turn: 3, step: 2, current: { provider: "deepseek-official", model: "deepseek-pro" }, recent: "user: 把这个函数改成 async\nassistant: 好的，我先看实现" },
   delegate: { turn: 1, step: 1, incoming: "帮我把整个 lib 目录的 CommonJS 改成 ESM，并补测试", recent: "" },
+  // 子代理模型选择：候选来自宿主已授权路由，r0 是 lead 当前路由。
+  spawnModel: {
+    task: "调研 DSH 的 subagent 生命周期并给出结论",
+    description: "research",
+    depth: 1,
+    routes: [
+      { provider: "deepseek-official", model: "deepseek-pro" },
+      { provider: "deepseek-official", model: "deepseek-flash" },
+    ],
+    current: { provider: "deepseek-official", model: "deepseek-pro" },
+    recent: "",
+  },
   compact: { totalTokens: 132000, triggerTokens: 100000, oversized: 5, nodes: 88, recent: "user: 继续\nassistant: 已经改完三个文件" },
   turnStop: { turn: 2, last: "我已经改完 a.js 和 b.js，接下来准备改 c.js。", pendingTools: 0, steered: 0 },
   retrieval: { tool: "web_search", query: "DSH agent/pre-step 的 next() 语义", recent: "user: 这个 hook 的返回值是什么" },
