@@ -2,15 +2,19 @@
 
 ![dsh-decision-engine — decision engine for DeepSeek Harness](docs/assets/hero.jpeg)
 
-**Free decision model usage provided**
+**Free decision model provided**
 
 [website](https://dsh.zuos.us/dsh-decision-engine/) ·
 [config.example.yml](config.example.yml) · [DECISIONS.md](DECISIONS.md)
 
 [简体中文](./README.zh.md)
 
-A judgement layer for DeepSeek Harness: a cheap decision model judges before the
-main model acts.
+A judgement layer for DeepSeek Harness: before the main model acts, a small,
+cheap decision model judges each call — allow it, escalate it, reroute it to a
+cheaper model, or skip the call entirely. The plugin provides a free decision
+model, so a fresh install works out of the box — nothing to pay, nothing to
+configure; any other service exposing a decision endpoint can be plugged in as
+well.
 
 ## Headline feature: subagents pick their own model
 
@@ -56,7 +60,7 @@ decision endpoint and the real host modules (2026-11-19):
 |---|---|
 | Targeted tests | `node --test test/spawn-model.test.js test/spawn-adapter.test.js` → **46/46 pass** |
 | Full suite | `node --test test/` → **772/772 pass** |
-| Real decision endpoint | SiliconFlow `systemone`, model `Kev-4B` → **HTTP 200**. For a verbatim-copy subtask the model chose the non-inherited route `r1` (`answers.route.choice = "r1"`, probability `r1 0.5881` vs `r0 0.4119`, `depth.score 0.3651`) |
+| Real decision endpoint | SiliconFlow (CN site), model `Kev-4B` → **HTTP 200**. For a verbatim-copy subtask the model chose the non-inherited route `r1` (`answers.route.choice = "r1"`, probability `r1 0.5881` vs `r0 0.4119`, `depth.score 0.3651`) |
 | Real end-to-end switch | That real answer fed through the real `spec.parse`/`decide` and real adapter produced `agent.model.select({ provider: "qwenwork", model: "deepseek-flash", reasoningEffort: "low" })` — the child actually moved **from the lead's `modelscope-token-plan/Qwen/Qwen3.8-Flash-Next` to `qwenwork/deepseek-flash`**, with a reasoning effort set from the model's own published capabilities |
 
 The captured answer is one measured sample, kept as evidence that the question

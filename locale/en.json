@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Decision Engine",
-    "description": "A cheap judgement layer: before the main model acts, a small decision model answers structured questions (risk, reversibility, task relevance, injection suspicion) and the plugin allows, asks or blocks — or switches model, or skips an expensive call entirely. Works against any service exposing a decision endpoint (built-in system one / bamboonode / SiliconFlow presets, or a custom base URL). Shadow-first by default, fail-open on any error."
+    "description": "A decision model judges before the main model acts: structured questions (risk, reversibility, task relevance, injection suspicion) are answered, so each call is allowed, escalated or blocked — or rerouted to a cheaper model, or skipped entirely. The plugin provides a free decision model, so a fresh install works out of the box; any other service exposing a decision endpoint works too (built-in presets or a custom base URL). Shadow-first by default, fail-open on any error."
   }
 }

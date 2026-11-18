@@ -9,7 +9,7 @@
 
 [English](./README.md)
 
-给 DeepSeek Harness 的决策层：主模型动手之前，用一个便宜的决策小模型做结构化判断。
+给 DeepSeek Harness 的决策层：主模型动手之前，先由决策小模型做结构化判断——放行、升级询问、换成更便宜的模型、或干脆省掉这次调用。本插件提供免费决策模型，全新安装开箱即用：不花钱、不用额外配置；也可以接入其他任意提供决策端点的服务。
 
 ## 头号功能：子代理自己挑模型
 
@@ -46,7 +46,7 @@ DeepSeek Harness 默认让派生出的 subagent **原样继承 lead 的 provider
 |---|---|
 | 针对性测试 | `node --test test/spawn-model.test.js test/spawn-adapter.test.js` → **46/46 通过** |
 | 全量测试 | `node --test test/` → **772/772 通过** |
-| 真实决策端点 | 硅基流动 `systemone`，模型 `Kev-4B` → **HTTP 200**。对一个「逐字照抄文本」的子任务，模型选了**非继承**的 `r1`（`answers.route.choice = "r1"`，概率 `r1 0.5881` vs `r0 0.4119`，`depth.score 0.3651`） |
+| 真实决策端点 | 硅基流动（国内站），模型 `Kev-4B` → **HTTP 200**。对一个「逐字照抄文本」的子任务，模型选了**非继承**的 `r1`（`answers.route.choice = "r1"`，概率 `r1 0.5881` vs `r0 0.4119`，`depth.score 0.3651`） |
 | 真实端到端换模型 | 把这条真实回答喂进真实的 `spec.parse`/`decide` 与真实 adapter，产出 `agent.model.select({ provider: "qwenwork", model: "deepseek-flash", reasoningEffort: "low" })`——子代理真的**从 lead 的 `modelscope-token-plan/Qwen/Qwen3.8-Flash-Next` 换成了 `qwenwork/deepseek-flash`**，且按该模型公布的能力设好了推理强度 |
 
 上面是单次实测样本，用来证明**题型被接受、模型真的在候选里选择、选择真的落到了子代理的模型上**，
