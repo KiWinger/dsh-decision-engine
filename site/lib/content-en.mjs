@@ -235,6 +235,7 @@ export const pluginBodyEn = `
     <a href="#install">Install</a>
     <a href="#config">Configuration</a>
     <a href="#points">Decision points</a>
+    <a href="#subagent">Subagent picks its model</a>
     <a href="#providers">Providers</a>
     <a href="#tokens">Token savings</a>
     <a href="#failopen">Fail-open</a>
@@ -274,6 +275,48 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine promo image", "A small model
     <strong>Free channel.</strong> Toggle "use free model" to use the project's
     decision model with no key of your own; the quota is paid by the project and
     may be withdrawn or changed at any time — the UI says so plainly.
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="subagent">
+  <h2>Headline feature: subagents pick their own model</h2>
+  <p class="sub">
+    This is the plugin's most important capability — even though in the UI it
+    is just one of nine decision points.
+  </p>
+
+  <p class="sub">
+    DeepSeek Harness normally gives a spawned subagent the <strong>exact same
+    provider, model and reasoning effort as the lead</strong>. That default is
+    only right when the lead is doing the same kind of work: sending research to
+    a strong model wastes money, sending a high-fidelity refactor to a cheap
+    tier buys a rewrite. Here the <strong>decision model picks a route itself</strong>
+    from the ones already authorized — no ladder, no price table, no route list
+    to configure.
+  </p>
+
+  <div class="facts">
+    ${fact("Candidates you already have", "The session's <code>subagent/model-selection-policy</code> (routes you already authorized in DSH settings), falling back to the live <code>llm</code> adapter catalogue. Nothing new to configure in this plugin.")}
+    ${fact("The model picks", "The endpoint accepts only choice / score / noul, so candidates become a <code>choice</code> question with short ids (r0…) mapped back to real routes. A malformed answer degrades to inheritance; the model cannot invent a non-existent route.")}
+    ${fact("Inheritance stays valid", "The lead's current route is always a candidate (labelled as such), so “use what I'm using” is a legitimate answer, not a forced switch.")}
+    ${fact("Effort from real capabilities", "Reasoning effort is chosen from the target model's own published <code>efforts</code>; if it publishes none the field is omitted rather than guessed — a guessed id fails the child spawn.")}
+    ${fact("Explicit choice wins", "A provider/model passed in the delegation call, or set via <code>set_model</code>, outranks automatic judgement. The main agent gets <code>list_models</code> / <code>set_model</code> / <code>list_presets</code>; <code>switch_preset</code> is deliberately absent (the host locks a session's preset once a turn starts).")}
+  </div>
+
+  <h3>Verified on real infrastructure: the child actually switched models</h3>
+  <p class="sub">Not a design sketch. Exercised end to end on 2026-11-19:</p>
+  ${table(
+    ["Layer", "Result"],
+    [
+      ["<code>node --test test/spawn-model.test.js test/spawn-adapter.test.js</code>", "Targeted tests <strong>46/46 pass</strong>; full suite <code>node --test test/</code> <strong>772/772 pass</strong>"],
+      ["Real decision endpoint", "SiliconFlow <code>systemone</code> / <code>Kev-4B</code> → <strong>HTTP 200</strong>; for a verbatim-copy subtask the model chose the non-inherited <code>r1</code> (probability <code>r1 0.5881</code> vs <code>r0 0.4119</code>, <code>depth.score 0.3651</code>)"],
+      ["Real end-to-end switch", "That real answer through the real <code>spec.parse/decide</code> and adapter produced <code>agent.model.select(&#123; provider: 'qwenwork', model: 'deepseek-flash', reasoningEffort: 'low' &#125;)</code> — the child <strong>really moved from the lead's <code>modelscope-token-plan/Qwen/Qwen3.8-Flash-Next</code> to <code>qwenwork/deepseek-flash</code></strong>, with reasoning effort set from the model's capabilities"],
+    ]
+  )}
+  <div class="note">
+    <strong>About the sample.</strong> This is one measured run: it proves the question shape is accepted, the model really chooses among candidates, and the choice reaches the child's model selection — not that every task switches. The same model correctly chose to inherit (r0) on demanding tasks, which is exactly the intended behaviour.
   </div>
 </section>
 

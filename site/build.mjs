@@ -282,6 +282,7 @@ const pluginBody = `
     <a href="#install">安装</a>
     <a href="#config">配置</a>
     <a href="#points">决策点</a>
+    <a href="#subagent">子代理自选模型</a>
     <a href="#providers">Provider</a>
     <a href="#tokens">省 token</a>
     <a href="#failopen">失败降级</a>
@@ -319,6 +320,44 @@ ${figure("/assets/promo.jpeg", "dsh-decision-engine 宣传图", "主模型动手
   <div class="note">
     <strong>免费通道。</strong>打开「使用免费模型」即可用项目方提供的决策模型，
     不用自己填 key；额度由项目方承担，随时可能停用或调整，界面上会直说这个风险。
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule"></div>
+
+<section class="wrap" id="subagent">
+  <h2>重大功能：子代理自己挑模型</h2>
+  <p class="sub">
+    这是本插件最值得单独讲的一项能力——尽管它在界面上只是九个判断点之一。
+  </p>
+
+  <p class="sub">
+    DeepSeek Harness 默认让派生出的子代理<strong>原样继承 lead 的 provider / model / 推理强度</strong>。
+    这个默认值只在「lead 自己也在做同类工作」时才对：把调研交给强模型是浪费，把高保真重构交给便宜档是返工。
+    本插件让<strong>决策模型自己在已授权路由里挑一个</strong>——不需要你配阶梯、填价格表或再配一遍路由。
+  </p>
+
+  <div class="facts">
+    ${fact("候选来自你已有的配置", "会话的 <code>subagent/model-selection-policy</code>（你已在 DSH 设置里授权给子代理的路由），拿不到时回退到 <code>llm</code> 适配器目录。本插件没有任何要新填的路由。")}
+    ${fact("是模型在挑", "端点只接受 choice / score / noul，所以候选被做成一道 <code>choice</code> 题，选项用短 id（r0…）映射回真实 provider/model；答案畸形就降级为继承，模型无法拼出不存在的路由。")}
+    ${fact("继承永远在选项里", "lead 当前路由始终是候选之一（并明确标注），「就用我现在这个」是合法答案，不是被迫换一个。")}
+    ${fact("推理强度按能力取", "effort 从目标模型公布的 <code>efforts</code> 里选；它不公布就省略该字段而不是猜——猜错的 id 会让子代理派生直接失败。")}
+    ${fact("显式选择优先", "派生调用里直接传的 provider/model，或 <code>set_model</code> 指定的，都高于自动判断。主 agent 可用 <code>list_models</code> / <code>set_model</code> / <code>list_presets</code>；刻意不做 <code>switch_preset</code>（宿主在 turn 开始后会锁住 preset）。")}
+  </div>
+
+  <h3>真实环境验证：子代理真的换了模型</h3>
+  <p class="sub">这不是设计稿。2026-11-19 用真实决策端点与真实宿主模块跑通全链路：</p>
+  ${table(
+    ["层次", "结果"],
+    [
+      ["<code>node --test test/spawn-model.test.js test/spawn-adapter.test.js</code>", "针对性测试 <strong>46/46 通过</strong>；全量 <code>node --test test/</code> <strong>772/772 通过</strong>"],
+      ["真实决策端点", "硅基流动 <code>systemone</code> / <code>Kev-4B</code> → <strong>HTTP 200</strong>；对「逐字照抄文本」任务，模型选了非继承的 <code>r1</code>（概率 <code>r1 0.5881</code> vs <code>r0 0.4119</code>，<code>depth.score 0.3651</code>）"],
+      ["真实端到端换模型", "该真实回答经真实 <code>spec.parse/decide</code> 与真实 adapter，产出 <code>agent.model.select(&#123; provider: 'qwenwork', model: 'deepseek-flash', reasoningEffort: 'low' &#125;)</code>——子代理<strong>真的从 lead 的 <code>modelscope-token-plan/Qwen/Qwen3.8-Flash-Next</code> 换成了 <code>qwenwork/deepseek-flash</code></strong>，并按模型能力设好了推理强度"],
+    ]
+  )}
+  <div class="note">
+    <strong>关于样本。</strong>上面是一次实测：它证明题型被接受、模型真的在候选里选择、选择真的落到了子代理的模型上——
+    不是承诺每个任务都换模型。同一模型在要求高的任务上正确地选了「继承」（r0），这正是设计想要的结果。
   </div>
 </section>
 
