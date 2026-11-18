@@ -72,8 +72,9 @@ export const indexBodyEn = `
           A pocket toolkit: independent small features in one plugin, each with its own
           switch on the Settings page, all on by default — switch one off and the native
           behaviour returns. Live today: the workspace directory picker pinned to the
-          in-app browse backend (changing it takes a DSH restart), and recovery banners for
-          prompts a failed turn swallowed.
+          in-app browse backend (changing it takes a DSH restart), recovery banners for
+          prompts a failed turn swallowed, and a bundled whale-girl artwork in place of the
+          sidebar's corner mark.
         </p>
         <div class="toc">
           <span class="badge green">One switch per feature</span>
@@ -641,9 +642,10 @@ export const pocketkitBodyEn = `;
   <p class="lede">
     A <strong>pocket toolkit</strong>: independent small features in one plugin, each with
     its own switch on the Settings page — all on by default, and switching one off brings
-    the native behaviour straight back. Two are live: pinning the workspace directory
-    picker to the in-app browse backend (changing it takes a DSH restart), and recovering the
-    prompt a failed turn swallowed (restore / copy / dismiss).
+    the native behaviour straight back. Three are live: pinning the workspace directory
+    picker to the in-app browse backend (changing it takes a DSH restart), recovering the
+    prompt a failed turn swallowed (restore / copy / dismiss), and swapping the sidebar's
+    corner mark for the bundled whale-girl artwork.
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">Install</a>
@@ -667,12 +669,12 @@ export const pocketkitBodyEn = `;
     Not a single-purpose plugin but a <strong>collection</strong>: the host installs the
     enabled features from the <code>lib/features/</code> registry, and the client ships a
     Pocket Kit settings page — one switch per registry row, all volatile (no config file is
-    touched). Recovery switches take effect immediately; the picker is decided at boot, so a
-    change there takes effect after you restart DSH.
+    touched). Recovery and logo switches take effect immediately; the picker is decided at
+    boot, so a change there takes effect after you restart DSH.
   </p>
 
   <div class="stats">
-    <div class="stat"><span class="n">2</span><span class="l">features live</span></div>
+    <div class="stat"><span class="n">3</span><span class="l">features live</span></div>
     <div class="stat"><span class="n">1</span><span class="l">switch per feature</span></div>
     <div class="stat"><span class="n">1</span><span class="l">switch needing a restart</span></div>
     <div class="stat"><span class="n">3</span><span class="l">steps to add a feature</span></div>
@@ -723,6 +725,27 @@ export const pocketkitBodyEn = `;
     ${fact("Switch on (default)", "The patch disables the auto row and composes the browse backend plus its client surface directly: the picker is always the in-app panel.")}
     ${fact("Switch off", "The stock auto selector is remounted at boot — exactly the behaviour you would get without this plugin. Takes a DSH restart; no config file touched, the setting is volatile.")}
   </div>
+
+  <h3>customLogo — replace the corner whale</h3>
+  <p class="sub">
+    That mark in the sidebar's top-left corner is not a hard-coded asset but a
+    <strong>slot</strong>: the sidebar declares <code>sidebar.brand.mark</code> (single-kind)
+    and the official plugin fills it with <code>&lt;FishLogo/&gt;</code> at the default
+    priority 0. A single slot renders its <strong>lowest-priority</strong> registration, so
+    this plugin registers at <code>-1</code> and wins the mark while the wordmark beside it,
+    the New-Session behaviour and the collapsed rail all stay exactly as the shell built them.
+  </p>
+  <div class="facts">
+    ${fact("No SVG required", "The slot receives a React node, not a file path, so a raster PNG works exactly like an SVG: the mark is an <code>&lt;img&gt;</code> over a same-origin route. Converting the picture to SVG would only throw away quality.")}
+    ${fact("The artwork ships with the package", "The image is fixed at <code>lib/assets/whale-girl.png</code> (256×256 RGBA, downscaled from the 1254px original because the mark renders at 24px). There is <strong>no path field and nothing to configure</strong> — the feature exists to put one reviewed picture in the corner; swapping it means replacing that file in the package.")}
+    ${fact("Switch off restores native", "The switch is volatile, so turning it off brings DSH's own whale back immediately, no restart. An unreadable image falls back the same way, so the corner is never blank.")}
+  </div>
+  <p class="sub">The page cannot read a file inside an installed package, so the host serves the bytes on one same-origin route, fenced like the open-in-app routes:</p>
+  ${codeBlock("GET  /dsh-pocket-kit/logo")}
+  <p class="sub">
+    The response carries an ETag and <code>no-cache</code>: after you replace the asset the
+    browser revalidates instead of pinning the old picture.
+  </p>
 </section>
 
 <div class="wrap"><hr class="rule"></div>
@@ -736,7 +759,7 @@ export const pocketkitBodyEn = `;
     ${fact("3 · install + restart", "Run <code>npm install</code> in the profile directory (or drop a symlink into its <code>node_modules/</code>), then restart DSH.")}
   </div>
   <div class="note ok">
-    <strong>No restart for the recovery switch after install.</strong> The bundled
+    <strong>No restart for the recovery or logo switches after install.</strong> The bundled
     <code>cordis.patch.yml</code> pins the browse picker at boot: that switch is decided at
     startup, so changing it takes a DSH restart; the other feature switches are volatile and
     take effect without one.
@@ -755,7 +778,9 @@ export const pocketkitBodyEn = `;
       ["<code>lib/features/index.js</code>", "The host-side <code>FEATURES</code> registry."],
       ["<code>lib/features/input-recovery.js</code>", "Prompt recovery: feed watcher, store, routes."],
       ["<code>lib/features/pin-browse-picker.js</code>", "Runtime mount/unmount of the picker pin."],
-      ["<code>lib/client.js</code>", "Client half — settings page and the recovery banner."],
+      ["<code>lib/features/custom-logo.js</code>", "Corner logo: serves the packaged artwork on a route."],
+      ["<code>lib/assets/whale-girl.png</code>", "The artwork itself (256×256 RGBA), shipped in the package."],
+      ["<code>lib/client.js</code>", "Client half — settings page, recovery banner, corner mark."],
       ["<code>cordis.patch.yml</code>", "Boot-composition patch pinning the browse picker."],
       ["<code>locale/en.json</code> / <code>locale/zh.json</code>", "English / Simplified-Chinese copy and metadata."],
       ["<code>test/</code>", "Suites driven through a minimal hook runtime."],
@@ -771,8 +796,8 @@ export const pocketkitBodyEn = `;
   <p class="sub">Plain ES modules, no build step.</p>
   ${codeBlock("npm test")}
   <p class="sub">
-    Seven suites (host / config / client / render / banner / pin-switch / resolve), all
-    green in the local checkout (2026-11-19). Adding a feature takes three steps: export
+    Nine suites (host / config / client / render / banner / pin-switch / logo / logo-client /
+    resolve), all green in the local checkout (2026-11-19). Adding a feature takes three steps: export
     <code>apply(ctx, enabled)</code> from <code>lib/features/&lt;id&gt;.js</code>, add one row to
     each <code>FEATURES</code> registry (host and client), and add
     <code>z.boolean().default(true).volatile()</code> to <code>Config</code> — the settings

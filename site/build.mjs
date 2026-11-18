@@ -132,8 +132,9 @@ const indexBody = `
         <h3>dsh-pocket-kit</h3>
         <p>
           口袋工具箱：一组互相独立的小功能装进同一个插件，每个功能在设置页有各自的开关
-          （默认全开，关掉即回原生）。已实装两件——目录选择器钉在应用内 browse 面板
-          （改动需重启 DSH 生效），以及失败轮次吞掉输入的找回横幅（放回 / 复制 / 忽略）。
+          （默认全开，关掉即回原生）。已实装三件——目录选择器钉在应用内 browse 面板
+          （改动需重启 DSH 生效）、失败轮次吞掉输入的找回横幅（放回 / 复制 / 忽略），
+          以及把侧边栏左上角的鲸鱼图标换成插件自带的鲸鱼娘插画。
         </p>
         <div class="toc">
           <span class="badge green">逐功能独立开关</span>
@@ -662,9 +663,10 @@ const pocketkitBody = `;
   <h1>dsh-pocket-kit</h1>
   <p class="lede">
     <strong>口袋工具箱</strong>：一组互相独立的小功能，装进同一个插件——每个功能在设置页
-    有各自的开关（默认全开），关掉就是原生行为。已实装两件：把「添加工作区」的目录选择
+    有各自的开关（默认全开），关掉就是原生行为。已实装三件：把「添加工作区」的目录选择
     钉在应用内 browse 面板（换代理、换 SSH 启动方式也不再弹系统文件面板，改动需重启 DSH 生效）；
-    把失败轮次吞掉的输入找回来（放回 / 复制 / 忽略）。
+    把失败轮次吞掉的输入找回来（放回 / 复制 / 忽略）；把左上角的鲸鱼图标换成插件自带的
+    鲸鱼娘插画。
   </p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">安装</a>
@@ -687,12 +689,12 @@ const pocketkitBody = `;
   <p class="sub">
     不是单功能插件，而是一个<strong>小功能合集</strong>：宿主按 <code>lib/features/</code>
     里的注册表安装启用的功能，客户端提供「口袋工具箱 / Pocket Kit」设置页——注册表里
-    一行一个开关，配置是 volatile 的、不写任何配置文件：输入找回拨完立刻生效；目录选择器
-    在启动时决定，拨完需重启 DSH 才生效。
+    一行一个开关，配置是 volatile 的、不写任何配置文件：输入找回与换 Logo 拨完立刻生效；
+    目录选择器在启动时决定，拨完需重启 DSH 才生效。
   </p>
 
   <div class="stats">
-    <div class="stat"><span class="n">2</span><span class="l">个已实装功能</span></div>
+    <div class="stat"><span class="n">3</span><span class="l">个已实装功能</span></div>
     <div class="stat"><span class="n">1</span><span class="l">个开关 / 功能</span></div>
     <div class="stat"><span class="n">1</span><span class="l">需要重启的开关</span></div>
     <div class="stat"><span class="n">3</span><span class="l">步加一个新功能</span></div>
@@ -739,6 +741,25 @@ const pocketkitBody = `;
     ${fact("开关开（默认）", "补丁停用 auto 行，直接 compose 内置 browse 后端与它的 client surface：目录选择恒为应用内面板。")}
     ${fact("开关关", "启动时把出厂 auto 选择器原样挂回——与没装本插件时完全一致。<strong>需重启 DSH、不改任何配置文件</strong>；配置是 volatile 的，拨完下次启动生效。")}
   </div>
+
+  <h3>customLogo · 换掉左上角的鲸鱼</h3>
+  <p class="sub">
+    侧边栏左上角那个图标不是写死的资源，而是一个 <strong>slot</strong>：侧边栏自己声明
+    <code>sidebar.brand.mark</code>（single 类型），官方插件在默认优先级 0 填入
+    <code>&lt;FishLogo/&gt;</code>。single 槽渲染的是<strong>优先级最低</strong>的那个注册，
+    所以本插件用 <code>-1</code> 注册就能换掉图标，而旁边的文字 wordmark、新建会话行为、
+    折叠态图标一概不动。
+  </p>
+  <div class="facts">
+    ${fact("不需要 SVG", "slot 拿到的是一棵 React 节点，不是文件路径，所以位图 PNG 和 SVG 一样能用——图标就是一个指向同源路由的 <code>&lt;img&gt;</code>。把图转成 SVG 只会白白损失画质。")}
+    ${fact("图片随包分发", "插画固定在 <code>lib/assets/whale-girl.png</code>（256×256 RGBA，从 1254px 原图缩放而来，因为图标只渲染 24px）。<strong>没有路径输入框、不可定制</strong>——这个功能要的就是一张审过的固定图；换图即替换包里的这个文件。")}
+    ${fact("关掉即还原", "开关是 volatile 的，拨掉立刻回到 DSH 原生鲸鱼图标，不用重启；图片读不到时同样回退原生图标，角落不会空着。")}
+  </div>
+  <p class="sub">页面读不到安装包里的文件，所以由宿主在同源路由上把字节发出来（栅栏与「在应用内打开」同一套）：</p>
+  ${codeBlock("GET  /dsh-pocket-kit/logo")}
+  <p class="sub">
+    响应带 ETag 与 <code>no-cache</code>：替换包里的图之后浏览器会重新校验，而不是把旧图钉住。
+  </p>
 </section>
 
 <div class="wrap"><hr class="rule"></div>
@@ -752,9 +773,10 @@ const pocketkitBody = `;
     ${fact("3 · 装 + 重启", "在 profile 目录跑 <code>npm install</code>（或把符号链接直接放进 profile 的 <code>node_modules/</code>），然后重启 DSH。")}
   </div>
   <div class="note ok">
-    <strong>装好之后，改输入找回开关不用重启。</strong>随包的 <code>cordis.patch.yml</code>
-    在启动时钉住 browse 选择器：目录选择器这个开关在启动时决定，拨动后需重启 DSH 才生效；
-    其余功能开关是 volatile，设置页拨动即时生效（Client 侧改动重载页面即生效）。
+    <strong>装好之后，改输入找回和换 Logo 这两个开关都不用重启。</strong>随包的
+    <code>cordis.patch.yml</code> 在启动时钉住 browse 选择器：目录选择器这个开关在启动时
+    决定，拨动后需重启 DSH 才生效；其余功能开关是 volatile，设置页拨动即时生效
+    （Client 侧改动重载页面即生效）。
   </div>
 </section>
 
@@ -770,7 +792,9 @@ const pocketkitBody = `;
       ["<code>lib/features/index.js</code>", "<code>FEATURES</code> 注册表（宿主侧）。"],
       ["<code>lib/features/input-recovery.js</code>", "找回被吞输入的本体。"],
       ["<code>lib/features/pin-browse-picker.js</code>", "目录选择器钉住的运行时挂/摘。"],
-      ["<code>lib/client.js</code>", "客户端：设置页与恢复横幅。"],
+      ["<code>lib/features/custom-logo.js</code>", "换 Logo：同源路由把包内插画发出去。"],
+      ["<code>lib/assets/whale-girl.png</code>", "随包分发的插画本体（256×256 RGBA）。"],
+      ["<code>lib/client.js</code>", "客户端：设置页、恢复横幅与左上角图标。"],
       ["<code>cordis.patch.yml</code>", "启动 composition 补丁：browse 选择器由此钉住。"],
       ["<code>locale/en.json</code> / <code>locale/zh.json</code>", "英文 / 简体中文文案与元数据。"],
       ["<code>test/</code>", "由最小 hook 运行时驱动的测试套件。"],
@@ -786,7 +810,7 @@ const pocketkitBody = `;
   <p class="sub">纯 ES 模块，无需构建步骤。</p>
   ${codeBlock("npm test")}
   <p class="sub">
-    七套测试（host / config / client / render / banner / pin-switch / resolve），
+    九套测试（host / config / client / render / banner / pin-switch / logo / logo-client / resolve），
     本地 checkout 实测全绿（2026-11-19）。加一个新功能只要三步：<code>lib/features/&lt;id&gt;.js</code>
     导出 <code>apply(ctx, enabled)</code>、宿主与客户端两张 <code>FEATURES</code> 表各加一行、
     <code>Config</code> 加一个 <code>z.boolean().default(true).volatile()</code>——
@@ -921,7 +945,7 @@ await writeFile(
   path.join(DIST, "dsh-pocket-kit/index.html"),
   page(
     "dsh-pocket-kit — DSH 口袋工具箱",
-    "DSH 口袋工具箱：一组互相独立的小功能装进一个插件，每个功能一个开关、默认开启、关掉即回原生。已实装：目录选择器钉在应用内 browse 面板，失败轮次吞掉的输入可原样找回。",
+    "DSH 口袋工具箱：一组互相独立的小功能装进一个插件，每个功能一个开关、默认开启、关掉即回原生。已实装：目录选择器钉在应用内 browse 面板，失败轮次吞掉的输入可原样找回，侧边栏左上角图标可换成插件自带的鲸鱼娘插画。",
     pocketkitBody,
     ZH_POCKETKIT
   )
