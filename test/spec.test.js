@@ -62,6 +62,7 @@ test("每个注册的决策点都有规格实现", () => {
     "retrieval",
     "skillPick",
     "cotTranslate",
+    "spawnModel",
   ];
   for (const id of expected) {
     const spec = findSpec(id);
@@ -82,6 +83,15 @@ test("每个规格的 build 产出 state 与非空 questions", () => {
     retrieval: { tool: "web_search", query: "dsh hooks", recent: "" },
     skillPick: { requested: "x", candidates: [{ name: "a", description: "da" }, { name: "b", description: "db" }], recent: "" },
     cotTranslate: { text: "Hello world, this is prose.", targetLanguage: "zh", head: "Hello world" },
+    spawnModel: {
+      task: "调研 dsh 的 subagent 生命周期",
+      description: "research",
+      depth: 1,
+      ladder: ["p/cheap", "p/strong"],
+      parent: "p/strong",
+      efforts: [],
+      recent: "",
+    },
   };
   for (const [id, input] of Object.entries(inputs)) {
     const built = POINT_SPECS[id].build(input);

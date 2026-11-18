@@ -128,8 +128,8 @@ for (const key of requiredKeys) {
 // 「全部通过」。检查脚本自己静默失败比没有检查更危险，所以缺导出直接判失败。
 check("导出 DECISION_POINTS", Array.isArray(plugin.DECISION_POINTS), `实际 ${typeof plugin.DECISION_POINTS}`);
 check(
-  "决策点数量与实现一致（8 个）",
-  Array.isArray(plugin.DECISION_POINTS) && plugin.DECISION_POINTS.length === 8,
+  "决策点数量与实现一致（9 个）",
+  Array.isArray(plugin.DECISION_POINTS) && plugin.DECISION_POINTS.length === 9,
   `实际 ${plugin.DECISION_POINTS?.length}`,
 );
 for (const point of plugin.DECISION_POINTS ?? []) {
@@ -140,7 +140,7 @@ for (const point of plugin.DECISION_POINTS ?? []) {
 // ---- 默认行为不变 --------------------------------------------------------
 const modes = plugin.effectivePointModes(defaults);
 check("authorize 默认跟随旧 mode（observe）", modes.authorize === "observe", `实际 ${modes.authorize}`);
-for (const id of ["route", "delegate", "compact", "turnStop", "retrieval", "skillPick", "cotTranslate"]) {
+for (const id of ["route", "delegate", "spawnModel", "compact", "turnStop", "retrieval", "skillPick", "cotTranslate"]) {
   check(`${id} 默认 off（升级不改变行为）`, modes[id] === "off", `实际 ${modes[id]}`);
 }
 
@@ -166,8 +166,8 @@ for (const id of ["route", "delegate", "compact", "turnStop", "retrieval", "skil
   }
   // tools/pre-execute 应有两个：授权守卫 + 检索/技能
   check(
-    "tools/pre-execute 同时挂了授权与检索/技能",
-    ctx.listeners("tools/pre-execute").length === 2,
+    "tools/pre-execute 同时挂了授权、检索/技能与子代理阶梯",
+    ctx.listeners("tools/pre-execute").length === 3,
     `实际 ${ctx.listeners("tools/pre-execute").length}`,
   );
 }
@@ -196,6 +196,87 @@ for (const id of ["route", "delegate", "compact", "turnStop", "retrieval", "skil
   }
   check("带全部服务时 apply 不抛", threw === undefined, threw === undefined ? "" : String(threw));
   check("translator.translate 已被包装", typeof ctx.get("translator").translate === "function");
+}
+
+// ---- 子代理模型阶梯：配置键 + 工具注册 -----------------------------------
+//
+// 这一节校验的是「新功能的接线真的接上了」，而不只是文件存在。少一个
+// schema 键 = 用户填了存不下去；工具没注册 = 模型看不到它，而两者的
+// 表现都是静默的。
+for (const key of [
+  "spawnModelLadder",
+  "spawnModelTools",
+  "spawnModelMaxScore",
+  "spawnModelFidelityFloor",
+  "spawnModelTaskChars",
+  "pointSpawnModel",
+]) {
+  check(`Config 含子代理阶梯键 ${key}`, Object.hasOwn(defaults, key), `实际 ${String(defaults[key])}`);
+}
+check(
+  "子代理阶梯默认空表（升级后行为不变）",
+  Array.isArray(defaults.spawnModelLadder) && defaults.spawnModelLadder.length === 0,
+  `实际 ${JSON.stringify(defaults.spawnModelLadder)}`,
+);
+check(
+  "子代理阶梯默认覆盖 subagent 工具",
+  Array.isArray(defaults.spawnModelTools) && defaults.spawnModelTools.includes("subagent"),
+  `实际 ${JSON.stringify(defaults.spawnModelTools)}`,
+);
+
+// 带 llm + tools 服务时，三个模型可调用工具必须注册上。
+{
+  const registered = [];
+  const ctx = makeCtx({
+    skills: { async list() { return []; } },
+    translator: { async translate() { return ""; } },
+    tokenMeter: { measure: () => ({ totalTokens: 0, nodes: [] }) },
+    toolResultPruner: { pruneSession: () => ({ pruned: [], charsRemoved: 0 }) },
+    llm: {
+      listProviders: () => [{ id: "p", name: "P" }],
+      listModels: async () => [],
+      resolveModelInfo: async (provider, model) => ({ provider, model, name: model }),
+    },
+    tools: {
+      register(definition) {
+        registered.push(definition);
+        return () => {};
+      },
+    },
+  });
+  let threw;
+  try {
+    plugin.apply(ctx, {});
+  } catch (error) {
+    threw = error;
+  }
+  check("带 llm / tools 服务时 apply 不抛", threw === undefined, threw === undefined ? "" : String(threw));
+  const names = registered.map((definition) => definition.name);
+  for (const name of ["list_models", "set_model", "list_presets"]) {
+    check(`注册了模型可调用工具 ${name}`, names.includes(name), `实际 ${JSON.stringify(names)}`);
+  }
+  // 每个工具都必须声明 output.render：宿主的 tools.register 会直接拒绝没有
+  // 它的定义，而那种失败发生在 apply 期，表现为整个插件挂不上。
+  for (const definition of registered) {
+    check(`工具 ${definition.name} 声明了 output.render`, typeof definition.output?.render === "function");
+  }
+}
+
+// 缺 llm / tools 服务的宿主：不注册工具，但 apply 不能抛。
+{
+  const ctx = makeCtx({
+    skills: { async list() { return []; } },
+    translator: { async translate() { return ""; } },
+    tokenMeter: { measure: () => ({ totalTokens: 0, nodes: [] }) },
+    toolResultPruner: { pruneSession: () => ({ pruned: [], charsRemoved: 0 }) },
+  });
+  let threw;
+  try {
+    plugin.apply(ctx, {});
+  } catch (error) {
+    threw = error;
+  }
+  check("缺 llm / tools 服务时 apply 仍不抛", threw === undefined, threw === undefined ? "" : String(threw));
 }
 
 // ---- 纯函数契约 ----------------------------------------------------------

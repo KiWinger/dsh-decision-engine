@@ -2,6 +2,106 @@
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
 
+## DEC-061 子代理模型阶梯：决策模型只给分数，路由与 effort 由本地映射（2026-11-18）
+
+**背景**：宿主派生 subagent 时的默认行为是**原样继承 lead 的 provider /
+model / 推理强度**（`resolveChildAgentOptions` → `parentAgentOptionsForDelegation`）。
+这个默认值只对「lead 自己也在做同类工作」成立，而它错的两个方向代价不同：
+
+- 把调研、查证、格式整理这类子任务交给 lead 的强模型 —— 纯浪费；
+- 把改关键代码、逐字迁移这类子任务下沉到便宜档 —— 返工，而返工成本总是
+  高于那一次省下的钱。
+
+因此新增第九个决策点 `pointSpawnModel`（子代理模型阶梯）。用户要求是
+「让本插件决定 subagent 用的模型和推理强度，取代 DSH 自带的继承逻辑」，
+并要求同时提供 `set_model` / `list_models` / `switch_preset` / `list_presets`
+这类工具。
+
+**决定**：
+
+1. **决策模型只回答两个 0–1 分数，不直接挑路由。** 决策端点只有三种题型
+   （choice / score / noul），没有自由文本。用 choice 让模型从几十条路由里
+   挑，等于把 `provider/model` 当选项 key 塞进 criteria——小模型会拼错、会选到
+   不存在的组合，而**拼错的代价是派生直接失败**（宿主 `resolveCallConfig` 会抛
+   未注册 provider / UNSUPPORTED）。所以拆成：
+   `capability`（能力需求）+ `depth`（思考深度）两个 score，加一个 `fidelity`
+   安全否决（noul）。路由由本地的有序阶梯 `tierForScore` 映射，effort 由**该
+   模型实际公布的清单** `effortForScore` 映射。
+
+2. **能力与思考深度分开问，不合成一个分数。** 二者会分离：一次「照抄一段
+   结论」是高能力但零思考；一次「把两个互相矛盾的口径算清楚」是低能力但深
+   思考。合成一个分数会让其中一类必然被估错。
+
+3. **两个钩子，一条队列。** 宿主的时序是死的：`tools/pre-execute` 拿得到
+   完整任务但子代理还不存在；`agent/created` 子代理已存在（可以
+   `agent.model.select()`）但载荷里没有任务内容。所以 `tools/pre-execute`
+   判断并入队（按父会话 + `description` 配对），`agent/created` 取走并落地。
+   **必须落在 `agent/created` 而不是 `agent/pre-step`**：循环在派发 pre-step
+   **之前**就捕获了本步 selection（`preStep()` 第一行 `model.current()`），在
+   pre-step 里 select 只能影响下一步——对只跑一两步的子代理等于永远不生效。
+
+4. **并行派生按 label 配对，不靠 FIFO。** 宿主的 `create` 是并发执行的，
+   `agent/created` 的到达顺序与工具调用发起顺序不保证一致；纯 FIFO 会把 A 的
+   档位发给 B。子代理会话里宿主自己写的第一条事件
+   `subagent/descriptor.label` 与派生调用的 `description` 逐字相同，用它配对。
+
+5. **三类不介入的边界**（任一成立就完全不改，子代理照旧继承）：
+   阶梯留空（默认）/ lead 在派生调用里显式给了 provider+model / 决策模型判
+   keep 或降级。三条都落在「宁可不动」一侧：插件的判断是优化，不是正确性的
+   必要条件。
+
+6. **effort 取不到就省略，绝不猜。** 模型不公布 `reasoning.efforts` 时返回
+   undefined 并**省略该字段**；硬塞一个不支持的 id 会让宿主抛
+   `UNSUPPORTED_REASONING_EFFORT`，子代理直接派生失败。同理，查不到目标模型
+   元数据时**完全不改**——不赌一条未经确认的路由。
+
+7. **优先级：派生调用里的显式参数 > `set_model` > 决策模型 > 继承 lead。**
+   `set_model` 的效果**不**取决于决策点的 off/observe/enforce：它是模型主动
+   调用的工具，与「自动判断」是两条独立的路。覆盖按**父会话**存内存、不落盘
+   ——「这个会话接下来派生的子代理用什么模型」是会话内的临时决定，写进
+   config.yml 会让它变成下次启动的默认值。
+
+8. **本版本不做 `switch_preset`。** 宿主的 `agentPresets.select()` 在会话开过
+   turn 之后返回 `agent-preset/locked`，而插件无法改写 subagent 工具的
+   `agent_preset` 参数（参数由模型给出）。所以切换 preset 只能靠「拦下这次
+   调用 + 让模型带新参数重发」，那是与「技能选择」点同类的拒绝-重试模式，
+   需要单独设计。本版本只提供只读的 `list_presets`。
+
+**被否决的方案**：
+
+- **让决策模型用 choice 直接挑 `provider/model`**：见第 1 条。拼错路由的代价
+  是派生失败，而分数 + 本地阶梯把「判断」与「合法性」分开，合法性由本地保证。
+- **在 `agent/pre-step` 里改路由**：见第 3 条。对本步无效，对短命子代理等于
+  永远无效。
+- **把阶梯写成结构化对象（嵌套 YAML）**：本插件的配置读取器只认标量与
+  字符串数组（`lib/config-file.js`），嵌套对象读不出来。阶梯必须是能手写的
+  部署知识，所以编码成 `provider/model[/effort]` 字符串数组。
+- **阶梯末尾一律当 effort**：`provider/vendor/model`（第三方聚合路由）与
+  `provider/model/effort` 语法同形。按位置切会把前者读成「model 叫 vendor、
+  强度叫 model」——一条根本不存在的路由。改为**只有末尾是已知 effort id
+  时才当强度**（`EFFORT_RANK` 的键）。
+- **纯 FIFO 配对**：见第 4 条。
+
+**验证**（随 lib 改动一同落地）：
+
+- `node --test test/`：772 项全绿，其中新增 `spawn-model.test.js`（22 项纯函数）
+  与 `spawn-adapter.test.js`（24 项接线行为，逐个断言「是否调用了 select」——
+  三类不介入都不会抛错，只表现为「用了和 lead 一样的模型」，因此必须对着
+  副作用断言而不是最终路由）。
+- `node scripts/verify-wiring.mjs`：新增六个 Config 键、三个工具注册、以及
+  「缺 llm / tools 服务的宿主仍不抛」共 16 项检查。
+- 用**宿主自己的 `defineTool`**（从安装目录解析真实 `@deepseek-ai/dsh-tools`）
+  校验三个工具的 schema 并实际执行，确认宿主的参数方言与 output schema 子集
+  都接受。
+- 端到端跑通：`tools/pre-execute` 判定 → `agent/created` 落地，日志输出
+  `子代理 C1 路由 lead/lead-model → cheap/cheap-model @ high（来源：决策模型）`。
+
+**教训（写进 `docs/lessons/subagent-model-timing.md`）**：宿主里「子代理已经
+存在」与「子代理的任务已经可见」发生在**两个不同的时刻**，而改模型只在前一个
+时刻有效。任何想「按任务内容给子代理选模型」的实现，都必须自己把这两半接
+起来——并且要用会话里持久化的 label 配对，因为并发创建不保证顺序。
+
+
 ## DEC-060 冷启动尾延迟：预算抬到 20s、只对超时/网络错误重试一次、冷却改半开（2026-11-13）
 
 **背景**：用户报「官方文档页点『发送请求』永远返回 200，但在插件里配好同一个

@@ -14,16 +14,22 @@ main model acts.
 
 ## Features
 
-**Eight decision points**
+**Nine decision points**
 
 - tool authorization
 - model routing
 - delegation
+- subagent model ladder
 - compaction
 - turn continuation
 - retrieval necessity
 - skill selection
 - COT translation gate
+
+**Subagent models**: when a subagent is spawned, the decision model picks its
+model and reasoning effort instead of the host default that inherits the lead's
+route verbatim. `list_models` / `set_model` / `list_presets` let the main agent
+choose directly, and an explicit choice outranks the automatic judgement.
 
 **Modes**: off · observe · enforce
 
