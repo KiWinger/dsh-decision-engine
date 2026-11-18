@@ -19,7 +19,7 @@ function navLinksFor(locale) {
   return [
     { href: `${prefix}/dsh-decision-engine/`, label: L ? "决策引擎" : "Decision engine" },
     { href: `${prefix}/dsh-model-flatmap/`, label: L ? "模型平铺" : "Model flatmap" },
-    { href: "https://github.com/zuosus/dsh-decision-engine", label: "GitHub" },
+    { href: "https://github.com/zuosus", label: "GitHub" },
   ];
 }
 
