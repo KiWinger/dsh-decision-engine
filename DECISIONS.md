@@ -2,6 +2,24 @@
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
 
+## DEC-062 全新安装默认打开「使用免费模型」：开箱即用，但不替老用户改开关（2026-11-19）
+
+**背景**：用户要求「新安装的用户默认打开使用预置的免费模型」。插件本来就有这条免费通道（DEC-030 服务端下发，DEC-037 改名「使用免费模型」），但开关默认关：新装的人打开配置页看到一行关着的开关，不知道免费模型已经准备好，得自己找到并拨开、还得填自己的 key 才能跑——这与「开箱即用」的初衷相悖。
+
+**决定**：只把**全新安装**的缺省值翻成 `true`；升级用户与本机曾有过任何配置的用户，默认仍逐字保持原来的 `false`。
+
+**怎么判定「全新安装」**：看本机有没有本插件写过的任何配置——新文件名 `config.yml`、旧文件名 `startlux.yml`、三处历史数据目录里的 `startlux.yml` 全部算数。任何一个存在就是老用户；只有全都不存在才算新装。这个判定必须在 `migrateLegacyData()` **之前**做：迁移本身会造出 `config.yml`，之后再问就永远是「有」。探测只读、不创建文件；探测异常一律当成老用户（宁可少给一个新用户默认开，也不翻掉老用户的选择）。
+
+**为什么不直接改 DEFAULTS / schema 默认**：`apply()` 的合成顺序是 `DEFAULTS < DSH 传入的 config < config.yml`，而 DSH 传进来的 `config` 是 Schemastery 解析后的**完整默认值**（`serverProvider:false` 也在其中），并不是用户显式配置。直接把 DEFAULTS / schema 默认值改成 `true`，老用户没写这一项时也会被 DSH 传来的 `false` 盖回去，等于什么都没改；反过来若在合成后无条件抬成 `true`，又会替老用户把关着的开关翻开、升级即开始向授权服务端发请求。所以做法是：保留 DEFAULTS 与 schema 默认 `false`（老用户的语义一字不动），在 `apply()` 里算出 `freshDefaults`（新装时 `serverProvider:true`），用它作为合成基座；并且在全新安装时把 config 层里**等于内置默认的 `false`** 丢掉——那是「没配置」的另一种写法，不是用户选择。config.yml 在最后展开，用户显式落盘的 `true`/`false` 永远优先。
+
+**缺省值不落盘**：新装的 true 只活在内存里，`config.yml` 不会因为默认开而被凭空创建（保持既有「无配置不建空文件」的约定）。用户第一次从配置页保存时，草稿从 `/status` 派生（那里已归一成 true），存下来的就是他自己看到的值；想关随时拨一下，显式 `false` 经 PUT /config 落盘后盖过缺省。免费通道失效时照旧静默回落到本地手动配置，面板显示原因——这条 DEC-030 的承诺不变。
+
+**为什么不为老用户也默认开**：那会把「升级」变成一次未经同意的行为变更——悄悄开始联系授权服务端、把已经在用的本地 key 顶掉，而用户只会看到「key 好像失效了」。DEC-037 之所以坚持默认关，守的就是这件事；这次只在「本来就没有既往选择」的全新安装上翻默认值，正是把那条约束保留在它真正适用的地方。
+
+**验证**：`test/fresh-install-default.test.js`（新增 5 项）钉住——全新安装默认开且不写 config.yml；新文件名、旧文件名、历史目录三种「已有配置」都默认仍关；显式 `false` 经保存后能关掉。`test/server-provider-route.test.js` 的默认回归改为两条：全新安装默认开、已有配置默认关；其 `setup()` 增加 `seedConfig` 以模拟升级用户。`test/scope-guard.test.js` 的夹具显式写 `serverProvider:false`，免得后台下发刷新多打一次 fetch 污染「问模型次数」断言。`node --test test/` 全绿（基线 773 + 新增 5 = 778），`node scripts/verify-wiring.mjs` 全部通过。
+
+**改动文件**：`lib/index.js`（`hasAnyPriorConfig()`、`apply()` 里的 `freshDefaults` 与合成层处理、DEFAULTS 注释、schema 描述）、`config.example.yml`、`test/fresh-install-default.test.js`（新增）、`test/server-provider-route.test.js`、`test/scope-guard.test.js`、`DECISIONS.md`。
+
 ## DEC-061 子代理模型阶梯：决策模型只给分数，路由与 effort 由本地映射（2026-11-18）
 
 **背景**：宿主派生 subagent 时的默认行为是**原样继承 lead 的 provider /

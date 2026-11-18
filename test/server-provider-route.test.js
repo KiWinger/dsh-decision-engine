@@ -19,7 +19,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -45,6 +45,14 @@ const LOCAL_KEY = "sk-LOCAL-CANARY-aabbccdd11223344";
 function setup(options = {}) {
   const home = mkdtempSync(join(tmpdir(), "dsh-servercfg-"));
   process.env.DSH_HOME = home;
+
+  // 可选：在 apply() 之前落一份配置，模拟「升级用户 / 已有配置」。
+  // 全新安装默认开免费模型只应发生在完全没有历史配置时。
+  if (options.seedConfig !== undefined) {
+    const dir = join(home, "dsh-decision-engine");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "config.yml"), options.seedConfig, { encoding: "utf8", mode: 0o600 });
+  }
 
   const decisionCalls = [];
   const serverCalls = [];
@@ -411,14 +419,31 @@ test("关掉开关后清空内存里的下发值，并不再请求下发端点",
   }
 });
 
-// ---------------------------------------------- 5. 默认关（回归）
+// ------------------------------- 5. 默认值（DEC-062：按是否全新安装分流）
 
-test("默认关闭时，一次状态请求不会去下发端点取任何东西", async () => {
-  // 这是「装了插件不等于联网」的姿态：默认关就必须一个请求都不发。
+test("全新安装默认开免费模型：一次状态请求会去下发端点取配置", async () => {
+  // 新装用户要的就是「不用填 key 也能跑」。默认开时状态页会补一发下发请求，
+  // 取回的地址/模型/key 在内存里生效；这里只确认开关与那一次请求确实发生。
   const env = setup();
   try {
     const { data } = await getStatus(env.routes);
-    assert.equal(data.serverProvider.enabled, false, "默认必须关");
+    assert.equal(data.serverProvider.enabled, true, "全新安装默认必须开");
+    assert.ok(
+      data.serverProvider.endpoint === SERVER_CONFIG_ENDPOINT,
+      "应回报内置端点地址（面板要显示它是从哪取的）",
+    );
+  } finally {
+    env.restore();
+  }
+});
+
+test("已有配置（升级用户）默认仍关闭，一次状态请求不发下发端点", async () => {
+  // 升级绝不能悄悄替老用户改开关、更不能因此开始向授权服务端发请求。
+  // 只要本机曾有过配置（这里以 config.yml 存在为代表），默认就保持原来的关。
+  const env = setup({ seedConfig: "enabled: false\nprovider: bamboonode\n" });
+  try {
+    const { data } = await getStatus(env.routes);
+    assert.equal(data.serverProvider.enabled, false, "已有配置时默认必须仍关");
     assert.equal(data.serverProvider.status, "idle", "默认应是 idle");
     assert.equal(env.serverCalls.length, 0, "默认关闭时不应请求下发端点");
     assert.ok(
