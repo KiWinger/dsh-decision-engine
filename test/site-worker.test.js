@@ -468,3 +468,33 @@ test("老客户端（无 p 字段）回填为默认插件，非法 p 直接拒�
     "非法插件 id 应返回 400",
   );
 });
+
+// ---------- 推送统一走 www-worker 共享推送服务（DEC-063）----------
+
+test("推送必须走 WWW_SERVICES 共享服务，不再直连 api.day.app", async () => {
+  const source = await readFile(BUNDLER, "utf8");
+  // 发送路径：service binding -> www-worker 的 sendPush RPC。
+  assert.ok(source.includes("env.WWW_SERVICES"), "应通过 WWW_SERVICES 绑定发送");
+  assert.ok(source.includes("sendPush({title:title,body:body})"), "应调用 sendPush 并传 title/body");
+  // 回归：直连 Bark 的常量与 fetch 拼装不得再出现。
+  assert.ok(!source.includes("api.day.app"), "bundle 不得再直连 api.day.app");
+  assert.ok(!source.includes("BARK_BASE"), "不得再保留 Bark base URL 常量");
+});
+
+test("三处部署配置都声明 WWW_SERVICES service binding（www-worker / Services）", async () => {
+  const wrangler = await readFile(join(SITE, "wrangler.jsonc"), "utf8");
+  assert.ok(wrangler.includes('"binding": "WWW_SERVICES"'), "wrangler.jsonc 应声明 WWW_SERVICES 绑定");
+  assert.ok(wrangler.includes('"service": "www-worker"'), "绑定的服务应是 www-worker");
+  assert.ok(wrangler.includes('"export_name": "Services"'), "应指定 RPC 入口 Services");
+
+  const cfConfig = await readFile(join(SITE, "cloudflare.config.ts"), "utf8");
+  assert.ok(cfConfig.includes("WWW_SERVICES"), "cloudflare.config.ts 应声明 WWW_SERVICES 绑定");
+  assert.ok(cfConfig.includes('worker: "www-worker"'), "cf 配置绑定的服务应是 www-worker");
+
+  // deploy.mjs 走裸 CF API 上传，metadata 里同样要带 services，
+  // 否则手工部署的脚本与配置漂移，绑定只存在于其中一条部署路径。
+  const deploy = await readFile(join(SITE, "deploy.mjs"), "utf8");
+  assert.match(deploy, /binding:\s*"WWW_SERVICES"/, "deploy.mjs metadata 应含 WWW_SERVICES 绑定");
+  assert.match(deploy, /service:\s*"www-worker"/, "deploy.mjs metadata 应指向 www-worker");
+  assert.match(deploy, /export_name:\s*"Services"/, "deploy.mjs metadata 应指定 RPC 入口 Services");
+});

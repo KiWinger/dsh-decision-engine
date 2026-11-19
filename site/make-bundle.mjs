@@ -6,7 +6,7 @@
 //
 //   1. `POST /api/e` —— 收匿名心跳（每台机器每天最多一次），写进 D1。
 //   2. `scheduled()` —— 每天 UTC 10:42（Asia/Shanghai 18:42）跑一次，
-//      汇总 D1 + 拉 npm 下载数，然后把结果推到 Bark。
+//      汇总 D1 + 拉 npm 下载数，然后通过 www-worker 共享推送服务发出（DEC-063）。
 //
 // 为什么 API 路由插在 `new URL(rq.url)` 之后、405 判定之前：
 //   - `POST` 会被原来的 GET/HEAD 门直接挡成 405；
@@ -158,24 +158,21 @@ async function ingestEvent(rq,env,ctx){
   return json({ok:true,day:day,plugin:plugin},202);
 }
 
-// ---------- 每日推送 ----------
-// 只推数值，不建展示页（DEC-020）。内容刻意很短：Bark 把标题与正文放在 URL
-// 路径段里，太长会被截断。
-const BARK_BASE="https://api.day.app";
-const SEG_MAX=480;
-
-function seg(v){const t=String(v||"").trim();const s=t.length>SEG_MAX?t.slice(0,SEG_MAX-3)+"...":t;return encodeURIComponent(s)}
-
-async function barkPush(env,title,body){
-  const key=(env&&typeof env.BARK_TOKEN==="string"?env.BARK_TOKEN:"").trim();
-  if(key.length===0)return {ok:false,err:"no-token"};
-  const url=BARK_BASE+"/"+encodeURIComponent(key)+"/"+seg(title)+"/"+seg(body);
+// ---------- 每日推送（www-worker 共享推送服务，DEC-063）----------
+// 不再直连 Bark 推送服务器：device key、480 字符截断与 URL 编码统一收敛在
+// www-worker 的共享推送服务里（service binding WWW_SERVICES -> www-worker
+// 的 Services.sendPush；绑定见 wrangler.jsonc / cloudflare.config.ts /
+// deploy.mjs）。内容仍刻意很短：标题与正文在手机上原样展示，太长也会被
+// 服务侧截断。本地 dev / 未绑定时降级为失败推送（digest_log 记 ok=0），
+// 不影响汇总本身。
+async function pushViaWwwWorker(env,title,body){
+  const svc=env&&env.WWW_SERVICES;
+  if(!svc||typeof svc.sendPush!=="function")return {ok:false,err:"no-www-service"};
   try{
-    const r=await fetch(url,{method:"GET"});
-    if(r.ok)return {ok:true};
-    const detail=(await r.text().catch(()=>"" )).slice(0,120);
-    return {ok:false,err:"http-"+r.status+":"+detail};
-  }catch(e){return {ok:false,err:"network:"+String(e&&e.message)}}
+    const r=await svc.sendPush({title:title,body:body});
+    if(r&&r.success)return {ok:true};
+    return {ok:false,err:String(r&&r.message||"unknown").slice(0,120)};
+  }catch(e){return {ok:false,err:"rpc:"+String(e&&e.message)}}
 }
 
 // npm 下载数：官方公开 API，无需 token。
@@ -297,11 +294,11 @@ async function runDigest(env,opts={}){
     "npm 下载 "+dlTotal
   ].join("\\n");
 
-  const sent=await barkPush(env,title,body);
+  const sent=await pushViaWwwWorker(env,title,body);
   await env.DB.prepare("INSERT INTO digest_log (plugin,day,sent_ms,ok,detail) VALUES (?,?,?,?,?) ON CONFLICT(plugin,day) DO UPDATE SET sent_ms=excluded.sent_ms,ok=excluded.ok,detail=excluded.detail")
     .bind(plugin,today,now,sent.ok?1:0,sent.ok?"":String(sent.err||"").slice(0,200))
     .run().catch(()=>{});
-  if(!sent.ok)console.warn("bark-push-failed "+String(sent.err||""));
+  if(!sent.ok)console.warn("push-failed "+String(sent.err||""));
   return { ok:sent.ok, err:sent.err||"", day:yday, dau24:dau24 };
 }
 
@@ -385,7 +382,7 @@ export default{fetch:async(rq,env,ctx)=>{
     }catch(e){console.warn("plugin-list-failed "+String(e&&e.message))}
     if(plugins.length===0)plugins=[DEFAULT_PLUGIN];
     // 串行而不是 Promise.all：D1 每次调用只有有限的并发连接，
-    // 而且并发推送更容易触发 Bark 的频率限制。
+    // 而且并发推送更容易触发下游推送服务的频率限制。
     for(const plugin of plugins){
       try{ await runDigest(env,{plugin}) }catch(e){ console.warn("digest-failed "+plugin+" "+String(e&&e.message)) }
     }

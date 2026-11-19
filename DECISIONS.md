@@ -1,6 +1,18 @@
 # DECISIONS.md — 设计决策日志
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
+## DEC-063 日报推送改走 www-worker 共享推送服务：device key 不再散落在各 worker（2026-11-19）
+
+**背景**：日报原来由本 worker 直连 Bark（`GET https://api.day.app/<key>/<title>/<body>`，device key 存 Worker Secret `BARK_TOKEN`），Dynamics 的 `dynamics-worker` 也各自维护了一份同样的发送逻辑与 key。同一件事有三份实现、两份 key，截断与编码规则还不一致。
+
+**决定**：推送收敛到 `www-worker` 作为基本服务对外暴露（RPC 入口 `Services.sendPush` / `sendPushNotification`，device key 走共享 secrets store 的 `BARK_DEVICE_KEY`）。本 worker 改为通过 service binding `WWW_SERVICES`（`service=www-worker`、`export_name=Services`）调用，删掉本地 Bark base URL、`seg()` 截断与 `barkPush()`。绑定必须同时写进三条部署路径：`site/wrangler.jsonc`、`site/cloudflare.config.ts`、`site/deploy.mjs` 的 metadata——少写一处就会出现「配置里看着有、线上跑起来没有」的漂移。
+
+**影响**：
+
+- 部署顺序变为 **先 www-worker，后本 worker**（service binding 在部署时校验目标存在）。
+- `BARK_TOKEN` 在本 worker 上不再被读取；未绑定 `WWW_SERVICES`（如本地 dev）时推送降级为 `push-failed`，`digest_log` 记 `ok=0`，汇总本身不受影响。
+- 标题/正文仍由本 worker 组装（口径见 DEC-046），截断（480 字符）与 URL 编码只在 www-worker 侧维护一份。
+- 回归护栏写在 `test/site-worker.test.js`：bundle 不得再出现 `api.day.app` / `BARK_BASE`，且三处部署配置都要有 `WWW_SERVICES` 绑定。
 
 ## DEC-062 全新安装默认打开「使用免费模型」：开箱即用，但不替老用户改开关（2026-11-19）
 

@@ -76,6 +76,8 @@ function scriptForm(scriptText, compatibilityDate) {
     compatibility_flags: ["nodejs_compat"],
     observability: { enabled: true, logs: { enabled: true, invocation_logs: true } },
     tags: ["dsh-site"],
+    // 共享推送服务（DEC-063）：与 wrangler.jsonc / cloudflare.config.ts 保持一致。
+    services: [{ binding: "WWW_SERVICES", service: "www-worker", export_name: "Services" }],
   });
   const parts = [
     `--${boundary}`,

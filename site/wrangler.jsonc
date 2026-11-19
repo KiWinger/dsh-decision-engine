@@ -40,7 +40,10 @@
   //
   // 这个端点是**公开领取** api-key，不是鉴权：请只放专用低额度 key，轮换靠改 secret
   // （插件在 TTL 内自动跟上，不需要发版）。未配置 PROVIDER_KEY 时路由返回 404。
-  // 匿名使用统计（DEC-020）：心跳写进 D1，每天 UTC 10:42 汇总后推 Bark。
+  // 匿名使用统计（DEC-020）：心跳写进 D1，每天 UTC 10:42 汇总后经共享推送服务发出。
+  // 推送不再自带 device key / 直连 Bark：统一走 www-worker 的共享推送服务
+  //（DEC-063）。部署顺序：先 www-worker 后本 worker（service binding 在部署时
+  // 校验目标存在）。
   //
   // 注意两件事：
   //
@@ -55,6 +58,15 @@
       "database_name": "dsh-telemetry",
       "database_id": "e828893a-5f98-444a-9082-71910bd705ae",
       "migrations_dir": "migrations"
+    }
+  ],
+  // 共享推送服务（DEC-063）：日报经 www-worker 的 Services.sendPush 发出。
+  // 与 deploy.mjs 的 metadata 保持一致（两条部署路径，同一份绑定）。
+  "services": [
+    {
+      "binding": "WWW_SERVICES",
+      "service": "www-worker",
+      "export_name": "Services"
     }
   ],
   "triggers": {
