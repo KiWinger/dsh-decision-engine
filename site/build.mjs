@@ -47,7 +47,6 @@ ${hreflang}
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14">
 <link rel="icon" href="/assets/mascot.png" type="image/png">
 <link rel="stylesheet" href="/assets/style.css">
-<script src="/assets/theme.js"></script>
 </head>
 <body>
 ${nav({
@@ -58,7 +57,6 @@ ${nav({
       ...navLinksFor(),
     ],
     i18n: alt ? { href: alt.path, label: alt.label, hreflang: locale === "zh" ? "en" : "zh-CN" } : null,
-    themeAria: locale === "zh" ? "切换主题" : "Toggle theme",
   })}
 <main>
 ${body}
@@ -838,7 +836,6 @@ await mkdir(path.join(DIST, "en", "dsh-pocket-kit"), { recursive: true });
 
 await copyFile(path.join(HERE, "assets/style.css"), path.join(DIST, "assets/style.css"));
 await copyFile(path.join(HERE, "assets/app.js"), path.join(DIST, "assets/app.js"));
-await copyFile(path.join(HERE, "assets/theme.js"), path.join(DIST, "assets/theme.js"));
 await copyFile(path.join(HERE, "assets/mascot.png"), path.join(DIST, "assets/mascot.png"));
 // 站点自包含：把两个插件的宣传图与截图一并拷进 dist/，make-bundle.mjs 会以
 // base64 嵌进 Worker（见 BINARY_EXT）。图片源在各自仓库的 docs/assets/ 里，

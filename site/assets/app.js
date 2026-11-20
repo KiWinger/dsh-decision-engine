@@ -35,29 +35,4 @@
 
     block.appendChild(btn);
   });
-
-  /* ---------- 主题切换 ---------- */
-  const KEY = "dsh-theme";
-  const root = document.documentElement;
-
-  function currentTheme() {
-    const attr = root.getAttribute("data-theme");
-    if (attr === "light" || attr === "dark") return attr;
-    return window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  }
-
-  document.querySelectorAll(".theme-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      const next = currentTheme() === "dark" ? "light" : "dark";
-      root.setAttribute("data-theme", next);
-      try {
-        localStorage.setItem(KEY, next);
-      } catch (err) {
-        /* 隐私模式下写不了 localStorage：本次浏览内仍然生效。 */
-      }
-    });
-  });
 })();

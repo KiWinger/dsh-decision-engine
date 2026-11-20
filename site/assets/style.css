@@ -1,6 +1,6 @@
 /* ---------- 调色板 ---------- *
- * 默认浅色；theme.js 会把 data-theme 显式落到 <html>（跟随系统或用户选择）。
- * [data-theme="dark"] 覆盖全部 token。JS 被禁用时退回系统偏好。
+ * 浅色为默认（:root）；深色整套 token 挂在 @media (prefers-color-scheme: dark)
+ * 下，由浏览器设置自动驱动，无需任何 JS（DEC-065）。
  * 设计原则：少画框。用留白、细分隔线和大字号分层，卡片只在确有必要时出现。
  */
 :root {
@@ -31,40 +31,28 @@
   color-scheme: light;
 }
 
-:root[data-theme="dark"] {
-  --bg: #0b0e14;
-  --bg-soft: #10151f;
-  --line: #202a3a;
-  --line-strong: #2b394d;
-  --fg: #e9edf5;
-  --fg-dim: #9aa8bd;
-  --fg-faint: #6b7893;
-  --accent: #3ac251;
-  --accent-2: #2bae7e;
-  --accent-3: #56b6ef;
-  --warn: #f0b429;
-  --danger: #ef6461;
-  --nav-bg: rgba(11, 14, 20, 0.8);
-  --glow-1: rgba(58, 194, 81, 0.13);
-  --glow-2: rgba(20, 129, 191, 0.11);
-  --thead-bg: rgba(255, 255, 255, 0.02);
-  --row-hover: rgba(255, 255, 255, 0.02);
-  --code-bg: rgba(255, 255, 255, 0.06);
-  --code-block-bg: #080b11;
-  --code-block-fg: #d7e2f2;
-  --chip-bg: rgba(255, 255, 255, 0.06);
-  color-scheme: dark;
-}
-
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --bg: #0b0e14; --bg-soft: #10151f; --line: #202a3a; --line-strong: #2b394d;
-    --fg: #e9edf5; --fg-dim: #9aa8bd; --fg-faint: #6b7893;
-    --accent: #3ac251; --accent-2: #2bae7e; --accent-3: #56b6ef;
-    --warn: #f0b429; --danger: #ef6461;
-    --nav-bg: rgba(11, 14, 20, 0.8); --glow-1: rgba(58, 194, 81, 0.13); --glow-2: rgba(20, 129, 191, 0.11);
-    --thead-bg: rgba(255, 255, 255, 0.02); --row-hover: rgba(255, 255, 255, 0.02);
-    --code-bg: rgba(255, 255, 255, 0.06); --code-block-bg: #080b11;
+  :root {
+    --bg: #0b0e14;
+    --bg-soft: #10151f;
+    --line: #202a3a;
+    --line-strong: #2b394d;
+    --fg: #e9edf5;
+    --fg-dim: #9aa8bd;
+    --fg-faint: #6b7893;
+    --accent: #3ac251;
+    --accent-2: #2bae7e;
+    --accent-3: #56b6ef;
+    --warn: #f0b429;
+    --danger: #ef6461;
+    --nav-bg: rgba(11, 14, 20, 0.8);
+    --glow-1: rgba(58, 194, 81, 0.13);
+    --glow-2: rgba(20, 129, 191, 0.11);
+    --thead-bg: rgba(255, 255, 255, 0.02);
+    --row-hover: rgba(255, 255, 255, 0.02);
+    --code-bg: rgba(255, 255, 255, 0.06);
+    --code-block-bg: #080b11;
+    --code-block-fg: #d7e2f2;
     --chip-bg: rgba(255, 255, 255, 0.06);
     color-scheme: dark;
   }
@@ -140,16 +128,6 @@ a:hover { text-decoration: underline; }
   font-family: var(--mono); font-size: 13px;
   border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px;
 }
-.theme-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 9px;
-  border: 1px solid var(--line); background: transparent;
-  color: var(--fg-dim); cursor: pointer; transition: color .15s, border-color .15s;
-}
-.theme-btn:hover { color: var(--fg); border-color: var(--line-strong); }
-.theme-btn .i-sun { display: none; }
-:root[data-theme="dark"] .theme-btn .i-sun { display: block; }
-:root[data-theme="dark"] .theme-btn .i-moon { display: none; }
 @media (max-width: 760px) { .nav .link.opt { display: none; } }
 
 /* ---------- Hero ---------- */
@@ -188,7 +166,7 @@ h1 {
   background: linear-gradient(100deg, var(--accent), var(--accent-2));
   color: #ffffff; border-color: transparent; font-weight: 650;
 }
-:root[data-theme="dark"] .btn-primary { color: #06210f; }
+@media (prefers-color-scheme: dark) { .btn-primary { color: #06210f; } }
 .btn-primary:hover { filter: brightness(1.07); }
 
 /* ---------- 命令块 ---------- */

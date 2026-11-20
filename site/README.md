@@ -13,14 +13,13 @@ site/
   package.json         site/ 自己的包：build / deploy 脚本 + wrangler 依赖
   package-lock.json    锁 wrangler 版本，保证 CI 与本地一致
   wrangler.jsonc       Workers Builds 的配置（name / main / build.command）
-  lib/partials.mjs     共用 HTML 片段（导航含主题按钮 + 语言按钮；品牌图标为 PNG、插件图标为自绘 SVG、figure/fact 片段）
+  lib/partials.mjs     共用 HTML 片段（导航含语言按钮；品牌图标为 PNG、插件图标为自绘 SVG、figure/fact 片段）
   lib/content-en.mjs   英文版页面内容（章节 id 与中文版一致）
                         功能描述（决策点数量、子代理模型等）改这里 + build.mjs 的中文段落，
                         两处必须同步；根目录 README.md / README.zh.md 是另一份摘要，也要对齐
   assets/mascot.png    站点品牌图标 / favicon
-  assets/style.css     样式（light/dark 双调色板；少卡片，用留白与细分隔线分层）
-  assets/theme.js      <head> 同步落 data-theme，防主题闪白
-  assets/app.js        交互（命令块复制、主题切换）
+  assets/style.css     样式（light/dark 双调色板，深色挂在 prefers-color-scheme 媒体查询下；少卡片，用留白与细分隔线分层）
+  assets/app.js        交互（命令块复制）
   assets/*.png/*.jpeg  三个插件的宣传图与截图（优化过的副本，随站点嵌入 Worker）
   dist/               构建产物（gitignore）
   worker/             Worker 脚本与 payload（gitignore）
@@ -34,7 +33,7 @@ site/
 | `/en/`、`/en/dsh-decision-engine/`、`/en/dsh-model-flatmap/`、`/en/dsh-pocket-kit/` | English |
 
 无尾斜杠的目录访问返回 308。每页都有 `canonical` + 双向 `hreflang`，
-导航右侧是「中文 / English」按钮与太阳/月亮主题按钮。
+导航右侧是「中文 / English」按钮。
 
 ### API 路由
 
@@ -82,10 +81,11 @@ npx cf workers secrets update PROVIDER_CONFIG_TOKEN       # 可选门禁
 
 ## 主题
 
-默认跟随系统 `prefers-color-scheme`；手动切换后记住在 `localStorage`
-（键 `dsh-theme`）。`theme.js` 在 head 里同步执行，先设 `data-theme`
-再首屏绘制，避免闪白。样式表是纯 token 双调色板（`:root` 浅色、
-`[data-theme=dark]` 深色覆盖），改颜色只动变量。
+light/dark 完全由浏览器设置（`prefers-color-scheme`）自动驱动：`:root`
+默认浅色，深色整套 token 挂在 `@media (prefers-color-scheme: dark)`
+下（含 `color-scheme: dark`，表单控件与滚动条一并跟随）。没有手动切换、
+没有 localStorage、没有 JS——浏览器改设置时页面实时更新，禁用 JS 也成立。
+改颜色只动变量。
 
 ## 流程
 

@@ -1,6 +1,21 @@
 # DECISIONS.md — 设计决策日志
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
+## DEC-065 站点主题改为完全跟随浏览器偏好：删掉手动切换、data-theme 与 theme.js（2026-11-20）
+
+**背景**：站点主题原来是三层——head 里 `theme.js` 同步落 `data-theme`（localStorage 显式选择 > 系统偏好 > light），导航有太阳/月亮按钮手动切换并写入 `dsh-theme`，CSS 用 `[data-theme=dark]` 与 `@media (prefers-color-scheme: dark) :root:not([data-theme])` 两套选择器。用户要求「都做成根据浏览器设置自动 light/dark 模式」：手动切换与持久化记住正是「自动」的对立面——用户改了浏览器的深色设置后，站点仍固执地显示上次手选的颜色，且同一台机器上不同标签页、不同设备间行为不一致。
+
+**决定**：主题完全由浏览器 `prefers-color-scheme` 驱动，纯 CSS 实现：
+
+- 样式表里深色整套 token（含 `color-scheme: dark`，表单控件与滚动条一并跟随）合并进单个 `@media (prefers-color-scheme: dark) { :root { … } }`；`:root` 默认浅色。
+- 删除 `assets/theme.js` 与 head 里对它的引用；删除导航主题按钮（`THEME_BTN`）与 `themeAria` 参数；删除 `app.js` 的主题切换段（复制按钮逻辑保留）。
+- `theme-color` 的两条 meta（本就带 light/dark media）保留，浏览器地址栏/状态栏配色继续跟随。
+- 浏览器设置变化时媒体查询实时重新应用：无需 JS、无闪白，禁用 JS 也成立。
+
+**为什么不留按钮做「默认自动 + 手动覆盖」**：需求是「根据浏览器设置自动」，留手动开关意味着同一人站点与浏览器设置会长期背离（切一次就被 localStorage 永远记住），正是这次要移除的行为。若将来需要手动覆盖，作为新决策重新引入，不在本轮留开关。旧 `dsh-theme` localStorage 值不再被任何代码读取（残留在浏览器里，无副作用）。
+
+**验证**：`test/site-theme.test.js`（新增 11 项）真实执行 `node site/build.mjs` 后对 dist/ 产物断言——8 个页面均无主题按钮/data-theme/theme.js 引用；深色值（#0b0e14、`color-scheme: dark`、btn-primary 深色字色 #06210f）只存在于媒体查询块内；`app.js` 无 `dsh-theme`；`theme.js` 源与产物均不存在。红→绿：实现前该文件 11 项全红（断言失败原因是行为缺失，非环境），实现后全绿。
+
 ## DEC-064 www-worker 的 BARK_DEVICE_KEY 落成普通 Worker Secret：Store 里没有这个条目，绑定会阻断部署（2026-11-20）
 
 **背景**：DEC-063 部署时 www-worker 报 CF 10182——它把 `BARK_DEVICE_KEY` 声明成了 Secrets Store 绑定，但 store `7d4345789d06443999d6b2d6cbd59caa` 里并没有这个 secret，引用不存在的 store 条目会让整个部署失败。
