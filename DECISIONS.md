@@ -1,6 +1,14 @@
 # DECISIONS.md — 设计决策日志
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
+## DEC-064 www-worker 的 BARK_DEVICE_KEY 落成普通 Worker Secret：Store 里没有这个条目，绑定会阻断部署（2026-11-20）
+
+**背景**：DEC-063 部署时 www-worker 报 CF 10182——它把 `BARK_DEVICE_KEY` 声明成了 Secrets Store 绑定，但 store `7d4345789d06443999d6b2d6cbd59caa` 里并没有这个 secret，引用不存在的 store 条目会让整个部署失败。
+
+**决定**：device key 只 www-worker 一个 worker 用，不需要跨 worker 共享存储——改成普通 Worker Secret（`cloudflare.config.ts` 里 `bindings.secret()`，`wrangler.jsonc` 不声明，值用 `npx wrangler secret put BARK_DEVICE_KEY` 设置一次，部署保留）。www-worker 代码本就兼容字符串形态，无需改动。
+
+**影响**：DEC-063 中「device key 走共享 secrets store」一句作废（其余结论不变）。对 dsh-worker 没有任何影响：它只经 `WWW_SERVICES` 调用，密钥细节全在 www-worker 侧。
+
 ## DEC-063 日报推送改走 www-worker 共享推送服务：device key 不再散落在各 worker（2026-11-19）
 
 **背景**：日报原来由本 worker 直连 Bark（`GET https://api.day.app/<key>/<title>/<body>`，device key 存 Worker Secret `BARK_TOKEN`），Dynamics 的 `dynamics-worker` 也各自维护了一份同样的发送逻辑与 key。同一件事有三份实现、两份 key，截断与编码规则还不一致。
