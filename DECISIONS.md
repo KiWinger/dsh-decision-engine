@@ -51,7 +51,7 @@
 
 - **入口**：首页（中英）hero 加原生 `<details class="market-install">` 按钮，展开后三步说明
   （插件 → 实验性插件启用「自定义插件索引」→ 发现 → 管理索引源），并给出可复制 URL
-  `https://assets.zuos.us/dsh-market/index.json`。无 JS 也能展开/复制，沿用既有 codeBlock。
+  `https://cdn.zuos.us/dsh-market/index.json`。无 JS 也能展开/复制，沿用既有 codeBlock。
 - **索引格式**：严格按 DSH format 1（`format:1`、本地化 title 含 en、合法 npm 包名、
   精确 SemVer、真实 Unix 发布秒、npm source、版本降序、去重）。构建期用官方包
   `@deepseek-ai/dsh-plugin-market-index` 的 `parseMarketIndex` 自检；不合法直接构建失败。
@@ -63,13 +63,13 @@
   `cloudflare.config.ts`、`deploy.mjs` metadata（沿用 DEC-063 的三路径对齐原则）。
   Worker 新增 `GET /dsh-market/index.json`：从 `env.PUBLIC.get()` 读，直接 200 + `max-age=300`
   + CORS `*`，不重定向（DSH 抓取用 `redirect:"error"`）；未绑定返回 503 JSON，缺对象 404。
-  `assets.zuos.us` 自定义域指向同一 bucket，用户给的 URL 与 Worker 路由字节一致。
+  `cdn.zuos.us` 自定义域指向同一 bucket，用户给的 URL 与 Worker 路由字节一致。
 - **自动更新**：`npm run deploy = npm run upload:market && cf deploy`，`deploy-market.mjs`
   用 `cf r2 objects put --bucket-name public --file ...` 上传。Workers Builds 的 Deploy command
   本就是 `npm run deploy`，因此每次 main 变更（含插件/manifest）先更新 R2 再部署 Worker；
   手动 `node deploy.mjs` 复用同一上传脚本，避免两条路径漂移。
 
-**为什么不让 Worker 直接打包静态 index.json**：那样 assets.zuos.us 的 R2 对象不会更新，
+**为什么不让 Worker 直接打包静态 index.json**：那样 cdn.zuos.us 的 R2 对象不会更新，
 用户添加的索引源 URL 会长期停留在旧内容。必须让 R2 对象本身每次部署刷新。
 
 **验证**：新增 `test/market-index.test.js`（5 项）+ `test/site-home-market.test.js`（7 项）
