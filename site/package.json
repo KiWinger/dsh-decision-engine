@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs && node make-bundle.mjs",
-    "deploy": "cf deploy",
+    "deploy": "npm run upload:market && cf deploy",
+    "upload:market": "node deploy-market.mjs",
     "preview": "cf workers versions create"
   },
   "devDependencies": {

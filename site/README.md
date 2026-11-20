@@ -7,12 +7,15 @@ DeepSeek Harness 插件项目的介绍站，部署在 Cloudflare Workers，域�
 
 ```
 site/
-  build.mjs            渲染 dist/（中英各四页：首页 + 三个插件页）
+  build.mjs            渲染 dist/（中英各四页：首页 + 三个插件页）+ 生成插件市场索引
   make-bundle.mjs      把 dist/ 压成自包含 Worker（gzip + base64）
   deploy.mjs           上传 Worker 并挂自定义域名（手动路径，见下）
+  deploy-market.mjs    把构建出的 index.json 上传到 R2 bucket public（部署链共用）
+  market-plugins.json  插件市场收录清单（auto 收录的源头）+ 真实 npm 版本/发布时间
+  scripts/build-market-index.mjs  生成 format 1 索引 + 官方规则自检
   package.json         site/ 自己的包：build / deploy 脚本 + wrangler 依赖
   package-lock.json    锁 wrangler 版本，保证 CI 与本地一致
-  wrangler.jsonc       Workers Builds 的配置（name / main / build.command）
+  wrangler.jsonc       Workers Builds 的配置（name / main / build.command / R2 绑定）
   lib/partials.mjs     共用 HTML 片段（导航含语言按钮；品牌图标为 PNG、插件图标为自绘 SVG、figure/fact 片段）
   lib/content-en.mjs   英文版页面内容（章节 id 与中文版一致）
                         功能描述（决策点数量、子代理模型等）改这里 + build.mjs 的中文段落，
@@ -42,6 +45,7 @@ site/
 | POST | `/api/e` | 匿名使用统计心跳（DEC-020/021）：校验后 202，写入放进 `ctx.waitUntil` |
 | POST | `/api/digest` | 手工触发日报（需 `x-digest-key` 与 `DIGEST_KEY` 一致；未配 secret 即 404） |
 | GET | `/api/provider-config` | 下发插件的 provider 配置（DEC-030，见下节） |
+| GET | `/dsh-market/index.json` | 插件市场索引（DEC-066）：从 R2 `PUBLIC` 读取，`max-age=300` + CORS，直接 200 |
 
 其余 `/api/*` 一律 404。
 
@@ -78,6 +82,32 @@ npx cf workers secrets update PROVIDER_CONFIG_TOKEN       # 可选门禁
 
 > ⚠️ **这不是鉴权**：任何知道地址的人 GET 一次就能拿到 api-key。请只放**专用、低额度**
 > 的 key；轮换靠改 Worker secret（插件在 TTL 内自动跟上，不需要发版）。
+
+## 插件市场索引（DEC-066）
+
+首页 hero 的「在 DSH 里安装这个插件市场」按钮展开后给出三步说明，让用户把
+`https://assets.zuos.us/dsh-market/index.json` 加进 DSH 的「自定义插件索引」
+（插件 → 实验性插件 → 自定义插件索引；发现 → 管理索引源）。
+
+索引是符合 DSH **format 1** 的文档：`format: 1`、本地化 `title`（含 `en`）、
+`plugins[]` 每项带合法 npm 包名、按 SemVer 降序的精确版本、真实 npm 发布时间
+和 `source: {type:"npm"}`。生成器 `scripts/build-market-index.mjs` 在构建期用
+官方包 `@deepseek-ai/dsh-plugin-market-index` 的 `parseMarketIndex` 自检，
+一份不合法的索引会让构建失败。
+
+**自动收录**：`market-plugins.json` 是唯一收录源。加一个本项目推荐的插件 =
+往这个 manifest 加一条（名字 + 版本/发布时间）；下次构建自动出现在索引里，
+首页项目卡片与索引各自维护、互不拷贝。`--refresh` 可从 npm registry 重抓版本
+与发布时间并回写 manifest。
+
+**R2 与自动更新**：`public` bucket 以 `PUBLIC` 绑定进 Worker（三处部署配置都
+声明，避免路径漂移）。Worker 的 `/dsh-market/index.json` 从该 bucket 读对象，
+直接 200 + CORS + `max-age=300`（DSH 抓索引用 `redirect:"error"`，绝不重定向）。
+`assets.zuos.us` 自定义域指向同一 bucket，因此用户添加的 URL 与 Worker 路由
+读到的是同一份对象。`npm run deploy = npm run upload:market && cf deploy`：
+每次 main 上的插件/manifest 变更触发 Workers Builds 时，`deploy-market.mjs`
+先用 `cf r2 objects put` 更新 bucket，再部署 Worker，不会出现新旧漂移。
+本地手动 `node deploy.mjs` 也复用同一个上传脚本。
 
 ## 主题
 

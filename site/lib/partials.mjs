@@ -88,8 +88,8 @@ export function footer() {
 </footer>`;
 }
 
-export function codeBlock(cmd) {
-  return `<div class="code-block"><pre><code><span class="pfx">$ </span>${esc(cmd)}</code></pre></div>`;
+export function codeBlock(cmd, { prompt = true } = {}) {
+  return `<div class="code-block"><pre><code>${prompt ? '<span class="pfx">$ </span>' : ""}${esc(cmd)}</code></pre></div>`;
 }
 
 export function table(headers, rows) {

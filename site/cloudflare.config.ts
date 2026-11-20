@@ -31,6 +31,11 @@ export default defineConfig({
 				name: "dsh-telemetry",
 				id: "e828893a-5f98-444a-9082-71910bd705ae",
 			}),
+			// 插件市场索引（DEC-066）：构建生成的 index.json 上传到这个 bucket，
+			// Worker 以 PUBLIC 读取并通过 /dsh-market/index.json 对外提供。
+			PUBLIC: bindings.r2({
+				name: "public",
+			}),
 		},
-			},
+	},
 });

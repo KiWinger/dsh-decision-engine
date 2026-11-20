@@ -1,6 +1,42 @@
 # DECISIONS.md — 设计决策日志
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
+## DEC-066 首页加入 DSH 插件市场入口：format 1 索引 + R2 public bucket 自动更新（2026-11-20）
+
+**背景**：用户要在首页 hero 加一个「dsh plugin market」功能：一个按钮告诉用户怎么装索引、
+一个符合 DSH 要求的 index.json URL、自动收录本项目列出的插件，并把 `cf R2` named `public`
+绑进项目，让插件更新时主动更新 `public/index.json`。
+
+**决定**：
+
+- **入口**：首页（中英）hero 加原生 `<details class="market-install">` 按钮，展开后三步说明
+  （插件 → 实验性插件启用「自定义插件索引」→ 发现 → 管理索引源），并给出可复制 URL
+  `https://assets.zuos.us/dsh-market/index.json`。无 JS 也能展开/复制，沿用既有 codeBlock。
+- **索引格式**：严格按 DSH format 1（`format:1`、本地化 title 含 en、合法 npm 包名、
+  精确 SemVer、真实 Unix 发布秒、npm source、版本降序、去重）。构建期用官方包
+  `@deepseek-ai/dsh-plugin-market-index` 的 `parseMarketIndex` 自检；不合法直接构建失败。
+  已用真实 npm registry 数据验证通过（decision-engine 31 版 / flatmap 12 版 / pocket-kit 2 版）。
+- **自动收录**：`site/market-plugins.json` 是唯一收录源，生成器 `site/scripts/build-market-index.mjs`
+  从中构建索引；新增插件只改 manifest 并跑构建，索引自动带上，不在生成器里复制首页卡片文案。
+  `--refresh` 可从 npm 重抓版本/发布时间回写。
+- **R2 绑定**：`binding:PUBLIC` / `bucket_name:public` 同时写进 `wrangler.jsonc`、
+  `cloudflare.config.ts`、`deploy.mjs` metadata（沿用 DEC-063 的三路径对齐原则）。
+  Worker 新增 `GET /dsh-market/index.json`：从 `env.PUBLIC.get()` 读，直接 200 + `max-age=300`
+  + CORS `*`，不重定向（DSH 抓取用 `redirect:"error"`）；未绑定返回 503 JSON，缺对象 404。
+  `assets.zuos.us` 自定义域指向同一 bucket，用户给的 URL 与 Worker 路由字节一致。
+- **自动更新**：`npm run deploy = npm run upload:market && cf deploy`，`deploy-market.mjs`
+  用 `cf r2 objects put --bucket-name public --file ...` 上传。Workers Builds 的 Deploy command
+  本就是 `npm run deploy`，因此每次 main 变更（含插件/manifest）先更新 R2 再部署 Worker；
+  手动 `node deploy.mjs` 复用同一上传脚本，避免两条路径漂移。
+
+**为什么不让 Worker 直接打包静态 index.json**：那样 assets.zuos.us 的 R2 对象不会更新，
+用户添加的索引源 URL 会长期停留在旧内容。必须让 R2 对象本身每次部署刷新。
+
+**验证**：新增 `test/market-index.test.js`（5 项）+ `test/site-home-market.test.js`（7 项）
++ `test/site-worker.test.js` 追加 4 项运行时 R2 路由测试（真实执行 bundle，200/404/503/405）。
+红→绿：实现前 11 项新测试全红（缺失文件/行为），实现后全绿；完整 `npm test` 807/807 通过。
+另外用官方解析器对 `site/dist/dsh-market/index.json` 验证：format 1、3 插件、版本数 31/12/2。
+
 ## DEC-065 站点主题改为完全跟随浏览器偏好：删掉手动切换、data-theme 与 theme.js（2026-11-20）
 
 **背景**：站点主题原来是三层——head 里 `theme.js` 同步落 `data-theme`（localStorage 显式选择 > 系统偏好 > light），导航有太阳/月亮按钮手动切换并写入 `dsh-theme`，CSS 用 `[data-theme=dark]` 与 `@media (prefers-color-scheme: dark) :root:not([data-theme])` 两套选择器。用户要求「都做成根据浏览器设置自动 light/dark 模式」：手动切换与持久化记住正是「自动」的对立面——用户改了浏览器的深色设置后，站点仍固执地显示上次手选的颜色，且同一台机器上不同标签页、不同设备间行为不一致。

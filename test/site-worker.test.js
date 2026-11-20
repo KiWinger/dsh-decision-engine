@@ -18,8 +18,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SITE = join(HERE, "..", "site");
@@ -497,4 +498,59 @@ test("三处部署配置都声明 WWW_SERVICES service binding（www-worker / Se
   assert.match(deploy, /binding:\s*"WWW_SERVICES"/, "deploy.mjs metadata 应含 WWW_SERVICES 绑定");
   assert.match(deploy, /service:\s*"www-worker"/, "deploy.mjs metadata 应指向 www-worker");
   assert.match(deploy, /export_name:\s*"Services"/, "deploy.mjs metadata 应指定 RPC 入口 Services");
+});
+
+
+/* ---- 插件市场索引的 R2 路由：真实执行生成的 Worker ---- */
+
+const MARKET_PATH = "/dsh-market/index.json";
+
+async function loadWorker() {
+  // make-bundle.mjs 在测试前已由 npm test 的 site-home-market.test.js 构建过；
+  // 这里再显式构建一次，保证单文件运行也能通过。
+  execFileSync(process.execPath, [join(SITE, "make-bundle.mjs")], { cwd: SITE, stdio: "pipe" });
+  const mod = await import(pathToFileURL(join(SITE, "worker", "bundle.js")).href + "?market=" + Date.now());
+  return mod.default;
+}
+
+test("R2 路由：有绑定且对象存在时返回 200 + CORS + cache-control", async () => {
+  const worker = await loadWorker();
+  const payload = JSON.stringify({ format: 1, plugins: [] });
+  const env = {
+    PUBLIC: {
+      get: async (key) => {
+        assert.equal(key, "dsh-market/index.json");
+        return { body: payload, etag: "abc123", httpEtag: '\"abc123\"' };
+      },
+    },
+  };
+  const res = await worker.fetch(new Request("https://dsh.zuos.us" + MARKET_PATH), env, { waitUntil() {} });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /application\/json/);
+  assert.equal(res.headers.get("access-control-allow-origin"), "*");
+  assert.equal(res.headers.get("cache-control"), "public, max-age=300");
+  assert.equal(await res.text(), payload);
+});
+
+test("R2 路由：对象不存在返回 404 JSON（失败路径）", async () => {
+  const worker = await loadWorker();
+  const env = { PUBLIC: { get: async () => null } };
+  const res = await worker.fetch(new Request("https://dsh.zuos.us" + MARKET_PATH), env, { waitUntil() {} });
+  assert.equal(res.status, 404);
+  assert.deepEqual(await res.json(), { ok: false, err: "not-found" });
+});
+
+test("R2 路由：未绑定 R2 返回 503 而不是 500", async () => {
+  const worker = await loadWorker();
+  const res = await worker.fetch(new Request("https://dsh.zuos.us" + MARKET_PATH), {}, { waitUntil() {} });
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { ok: false, err: "r2-not-configured" });
+});
+
+test("R2 路由：POST 返回 405，且 allow 头正确", async () => {
+  const worker = await loadWorker();
+  const env = { PUBLIC: { get: async () => ({ body: "{}" }) } };
+  const res = await worker.fetch(new Request("https://dsh.zuos.us" + MARKET_PATH, { method: "POST" }), env, { waitUntil() {} });
+  assert.equal(res.status, 405);
+  assert.equal(res.headers.get("allow"), "GET, HEAD");
 });

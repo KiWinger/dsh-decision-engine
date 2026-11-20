@@ -69,6 +69,15 @@
       "export_name": "Services"
     }
   ],
+  // 插件市场索引（DEC-066）：构建时生成的 index.json 由发布脚本上传到这个
+  // R2 bucket，Worker 以 PUBLIC 绑定读取并对外提供（/dsh-market/index.json）。
+  // bucket 名固定 public；assets.zuos.us 自定义域指向同一 bucket 的 dsh-market/ 前缀。
+  "r2_buckets": [
+    {
+      "binding": "PUBLIC",
+      "bucket_name": "public"
+    }
+  ],
   "triggers": {
     "crons": ["42 10 * * *"]
   },

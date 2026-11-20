@@ -5,6 +5,7 @@
 //
 // 也可以先只上传不挂域名：node site/deploy.mjs --no-domain
 import { readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +27,7 @@ function resolveToken() {
 const ACCOUNT = "48bfaa4269a02470c2d6529a56b05f23";
 const ZONE = "3db8f90f7f15b16e1c6c995fab875a31";
 const SCRIPT = "dsh-worker"; // 用户在 CF 后台起的名字；域名 dsh.zuos.us 绑在它上面
+const BUCKET = "public"; // 插件市场索引所在的 R2 bucket（assets.zuos.us 自定义域指向它）
 const HOSTNAME = "dsh.zuos.us";
 const API = "https://api.cloudflare.com/client/v4";
 
@@ -78,6 +80,8 @@ function scriptForm(scriptText, compatibilityDate) {
     tags: ["dsh-site"],
     // 共享推送服务（DEC-063）：与 wrangler.jsonc / cloudflare.config.ts 保持一致。
     services: [{ binding: "WWW_SERVICES", service: "www-worker", export_name: "Services" }],
+    // 插件市场索引（DEC-066）：与 wrangler.jsonc / cloudflare.config.ts 同一份绑定。
+    r2_buckets: [{ binding: "PUBLIC", bucket_name: "public" }],
   });
   const parts = [
     `--${boundary}`,
@@ -94,6 +98,16 @@ function scriptForm(scriptText, compatibilityDate) {
     "",
   ].join("\r\n");
   return { body: parts, contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
+// 插件市场索引（DEC-066）：先上传 R2，再上传 Worker。这样 Worker 一旦开始
+// 对外服务 /dsh-market/index.json，bucket 里已经有新版本，不会出现新旧漂移。
+// 与 Workers Builds 路径共用同一个上传脚本，避免两份实现漂移。
+if (existsSync(path.join(HERE, "dist", "dsh-market", "index.json"))) {
+  console.log("上传插件市场索引到 R2…");
+  execFileSync(process.execPath, [path.join(HERE, "deploy-market.mjs")], { cwd: HERE, stdio: "inherit" });
+} else {
+  console.log("  · 跳过 R2 上传：dist/dsh-market/index.json 不存在（先跑 npm run build）");
 }
 
 console.log(`上传 Worker ${SCRIPT}（${(script.length / 1024).toFixed(1)} KB）…`);

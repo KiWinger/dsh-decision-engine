@@ -169,6 +169,24 @@ h1 {
 @media (prefers-color-scheme: dark) { .btn-primary { color: #06210f; } }
 .btn-primary:hover { filter: brightness(1.07); }
 
+/* Hero 的「安装插件市场」面板：原生 details，无 JS 也能展开/复制 */
+.market-install { margin-top: 4px; }
+.market-install > summary {
+  cursor: pointer; list-style: none; width: max-content; max-width: 100%;
+}
+.market-install > summary::-webkit-details-marker { display: none; }
+.market-install > summary::after { content: ""; }
+.market-install[open] > summary { opacity: .78; }
+.install-panel {
+  margin-top: 18px; padding: 22px 24px; max-width: 680px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+.install-panel .sub { font-size: 14.5px; margin-bottom: 14px; }
+.install-panel ol { margin: 0 0 18px; padding-left: 22px; color: var(--fg); font-size: 15px; line-height: 1.8; }
+.install-panel ol strong { font-weight: 600; }
+.install-panel .code-block { margin-bottom: 0; }
+
 /* ---------- 命令块 ---------- */
 .code-block {
   position: relative; background: var(--code-block-bg);

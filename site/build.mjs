@@ -5,9 +5,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { nav, footer, codeBlock, table, figure, fact, DECISION_ICON, FLATMAP_ICON, POCKETKIT_ICON, esc } from "./lib/partials.mjs";
 import { indexBodyEn, pluginBodyEn, flatmapBodyEn, pocketkitBodyEn } from "./lib/content-en.mjs";
+import { buildMarketIndex, INDEX_URL } from "./scripts/build-market-index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DIST = path.join(HERE, "dist");
+// DSH_SITE_DIST 允许测试把产物写到独立目录：node --test 会并发加载多个测试文件，
+// 它们各自跑一次 build.mjs（build 开头会 rm(DIST)），共享 dist/ 会互相删文件。
+const DIST = process.env.DSH_SITE_DIST ? path.resolve(process.env.DSH_SITE_DIST) : path.join(HERE, "dist");
 // 页面不展示版本号：版本随时会更新，写死/读取都会立刻漂移，索性不显示。
 const ORIGIN = "https://dsh.zuos.us";
 
@@ -80,6 +83,19 @@ const indexBody = `
     这里是 <strong>dsh.zuos.us</strong> 收录的 DeepSeek Harness（DSH）插件。
     都免费、开源、MIT，装上就能用；下面挑一个看详细介绍与安装方式。
   </p>
+  <details class="market-install" id="market-install">
+    <summary class="btn btn-primary">在 DSH 里安装这个插件市场 →</summary>
+    <div class="install-panel">
+      <p class="sub">一次添加，以后本项目收录的新插件都会出现在 DSH 的发现页里。</p>
+      <ol>
+        <li>打开 DSH 的 <strong>插件 → 实验性插件</strong>，启用 <strong>自定义插件索引</strong>。</li>
+        <li>进入 <strong>插件 → 发现 → 管理索引源</strong>，点「添加索引源」。</li>
+        <li>填入下面这条 URL 并确认：</li>
+      </ol>
+      ${codeBlock(INDEX_URL, { prompt: false })}
+      <p class="sub">回到发现页，即可浏览、搜索、一键安装这些插件；已安装的会按包名标出。</p>
+    </div>
+  </details>
 </div>
 
 <div class="wrap"><hr class="rule"></div>
@@ -843,6 +859,12 @@ await copyFile(path.join(HERE, "assets/mascot.png"), path.join(DIST, "assets/mas
 for (const img of ["promo.jpeg", "shot-config.png", "shot-decisions.png", "shot-flatmap.jpeg"]) {
   await copyFile(path.join(HERE, "assets", img), path.join(DIST, "assets", img));
 }
+
+// 插件市场索引（format 1）：每次构建从 manifest 重新生成，发版即更新。
+// 同时写进 dist/ 供 Worker 打包，以及 site/public/index.json 供 R2 上传。
+const marketIndex = await buildMarketIndex();
+await mkdir(path.join(DIST, "dsh-market"), { recursive: true });
+await writeFile(path.join(DIST, "dsh-market", "index.json"), JSON.stringify(marketIndex, null, 2) + "\n");
 
 // 中文（默认）与英文各四页（首页 + 三个插件页）；alt 互相指认，hreflang 与导航语言按钮共用。
 const ZH_HOME = { lang: "zh-CN", self: "/", alt: { path: "/en/", label: "English" } };

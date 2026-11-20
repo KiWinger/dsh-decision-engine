@@ -2,6 +2,7 @@
 // 章节 id 保持一致（#what / #install / #config / #points / #providers /
 // #tokens / #failopen / #verify），中文页的锚点链接可以直接复用。
 import { codeBlock, table, figure, fact, DECISION_ICON, FLATMAP_ICON, POCKETKIT_ICON } from "./partials.mjs";
+import { INDEX_URL } from "../scripts/build-market-index.mjs";
 
 // 页面不展示版本号：版本随时会更新，不显示以免挂旧号。
 
@@ -18,6 +19,19 @@ export const indexBodyEn = `
     All free, open source, MIT, ready to use — pick one below for its guide
     and install steps.
   </p>
+  <details class="market-install" id="market-install">
+    <summary class="btn btn-primary">Install this plugin index in DSH →</summary>
+    <div class="install-panel">
+      <p class="sub">Add it once and every plugin this project recommends shows up in DSH's Discover page.</p>
+      <ol>
+        <li>Open <strong>Plugins → Experimental</strong> and enable <strong>Custom plugin index</strong>.</li>
+        <li>Go to <strong>Plugins → Discover → Manage index sources</strong> and choose “Add index source”.</li>
+        <li>Paste this URL and confirm:</li>
+      </ol>
+      ${codeBlock(INDEX_URL, { prompt: false })}
+      <p class="sub">Back on Discover you can browse, search and install them; installed ones are marked by package name.</p>
+    </div>
+  </details>
 </div>
 
 <div class="wrap"><hr class="rule"></div>

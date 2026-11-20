@@ -347,6 +347,19 @@ export default{fetch:async(rq,env,ctx)=>{
     const ttl=Number.isFinite(ttlRaw)?Math.min(3600,Math.max(60,Math.trunc(ttlRaw))):600;
     return json({ok:true,v:1,baseUrl:baseUrl,model:model,endpointStyle:style,key:cfgKey,ttlSeconds:ttl},200);
   }
+  // 插件市场索引（DEC-066）：从 R2 bucket public（绑定 PUBLIC）读取，
+  // 直接返回 200 —— DSH 抓索引用 redirect:"error"，因此这里绝不重定向。
+  // assets.zuos.us 自定义域指向同一对象，Worker 路由只是同源的另一条路径。
+  if(u.pathname==="/dsh-market/index.json"){
+    if(rq.method!=="GET"&&rq.method!=="HEAD")return new Response("Method Not Allowed",{status:405,headers:{allow:"GET, HEAD"}});
+    if(!env||!env.PUBLIC)return json({ok:false,err:"r2-not-configured"},503);
+    const obj=await env.PUBLIC.get("dsh-market/index.json");
+    if(!obj)return json({ok:false,err:"not-found"},404);
+    const h={"content-type":"application/json; charset=utf-8","cache-control":"public, max-age=300","access-control-allow-origin":"*","x-content-type-options":"nosniff"};
+    if(obj.etag)h.etag=JSON.stringify(obj.etag);
+    if(obj.httpEtag&&rq.headers.get("if-none-match")===obj.httpEtag)return new Response(null,{status:304,headers:{etag:obj.httpEtag}});
+    return new Response(obj.body,{status:200,headers:h});
+  }
   if(u.pathname.indexOf("/api/")===0){
     return json({ok:false,err:"not-found"},404);
   }
