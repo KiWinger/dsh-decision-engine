@@ -7,6 +7,9 @@
 [website](https://dsh.zuos.us/dsh-decision-engine/) ·
 [config.example.yml](config.example.yml) · [DECISIONS.md](DECISIONS.md)
 
+> The site source lives in [zuosus/dsh-site](https://github.com/zuosus/dsh-site) — it was
+> split out of this repo on 2026-11-20 (DEC-067). This repo no longer contains `site/`.
+
 [简体中文](./README.zh.md)
 
 A judgement layer for DeepSeek Harness: before the main model acts, a small,

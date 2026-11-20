@@ -7,6 +7,9 @@
 [网站](https://dsh.zuos.us/dsh-decision-engine/) ·
 [config.example.yml](config.example.yml) · [DECISIONS.md](DECISIONS.md)
 
+> 站点源码已独立到 [zuosus/dsh-site](https://github.com/zuosus/dsh-site)（2026-11-20 拆分，
+> 见 DEC-067）。本仓库不再包含 `site/`。
+
 [English](./README.md)
 
 给 DeepSeek Harness 的决策层：主模型动手之前，先由决策小模型做结构化判断——放行、升级询问、换成更便宜的模型、或干脆省掉这次调用。本插件提供免费决策模型，全新安装开箱即用：不花钱、不用额外配置；也可以接入其他任意提供决策端点的服务。

@@ -17,11 +17,7 @@ node_modules
 .DS_Store
 *.tgz
 
-# 站点构建产物与部署凭据
-site/dist/
-site/worker/
-site/.env*
-# cf 构建产物与生成的类型
+# cf 构建产物与生成的类型（站点已独立到 zuosus/dsh-site，这里只留历史残留）
 .cloudflare/
 
 # npm 凭据：含 auth token，绝不入库
