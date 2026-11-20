@@ -2,6 +2,18 @@
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
 
+## DEC-068 面板顶部链接改宣传 DSH 插件市场（2026-11-20）
+
+**背景**：面板顶栏的页面级链接原来指向本插件的文档页 `https://dsh.zuos.us/dsh-decision-engine/`，文案「项目主页 ↗」。用户要求 link 部分改为宣传 `dsh.zuos.us` 的插件市场。`dsh.zuos.us` 首页本身就是插件市场（DEC-066：format 1 索引 + R2 自动更新，收录本插件等），其根 URL 即市场入口。
+
+**决定**：
+
+- 把顶部链接的 href/title 从文档页改为市场首页 `https://dsh.zuos.us/`，文案由「项目主页 ↗」改为「插件市场 ↗」（英文 "Plugin market ↗"，走既有 i18n 表）。
+- 常量 `SITE_URL` 改名 `MARKET_URL`，注释同步；链接仍是页面级入口，保留在 tab 栏上方、统计页也可见，站外打开行为（target=_blank + noreferrer noopener）不变。
+- 不改其它 `dsh.zuos.us` 引用：provider 配置端点、遥测上报端点是服务接口（`lib/server-config.js` / `lib/telemetry.js`），与宣传链接无关。
+
+**验证**：`test/client-ui.test.js` 三条链接断言先改期望（URL + 文案），实现前 3 条红（「面板没有指向插件市场的链接」——行为缺失，非环境），实现后全绿；完整 `npm test` 764/764，`npm run verify:wiring` 通过。
+
 ## DEC-067 站点独立成 zuosus/dsh-site 仓库：只换代码托管位置，不换 Worker 身份（2026-11-20）
 
 **背景**：`dsh.zuos.us` 站点（`site/` → Cloudflare Worker `dsh-worker`）一直放在本仓库里。但两者是两个发布单元：本仓库发 npm 包（`files` 白名单、`dsh` 字段、peerDependencies 全是宿主包），`site/` 发一个 Worker（wrangler + D1 + cron + R2）。混在一个仓库的代价：改一行站点文案也要在插件仓库 `main` 上产生提交，插件历史里混着大量站点改动；站点的 `wrangler` 依赖与插件的宿主 peerDependencies 互相干扰（DEC-016 记过 `@deepseek-ai/dsh-type-meta` 的 404，就是这种干扰的直接后果）。
