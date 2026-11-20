@@ -1,8 +1,8 @@
 # dsh-decision-engine 配置模板
 #
 # 用法：复制到数据目录，按需修改。
-#   mkdir -p ~/.dsh/dsh-decision-engine
-#   cp config.example.yml ~/.dsh/dsh-decision-engine/config.yml
+#   mkdir -p ~/.dsh/plugins/dsh-decision-engine
+#   cp config.example.yml ~/.dsh/plugins/dsh-decision-engine/config.yml
 #
 # 文件名是 config.yml：本插件早已不是「只服务 startlux 一家」的插件，
 # 而是任意决策服务（system one / bamboonode / 硅基流动 / custom）的决策层，
@@ -10,8 +10,9 @@
 # 升级不需要重新填 key。
 #
 # 插件按以下顺序找配置，取第一个存在的：
-#   ~/.dsh/dsh-decision-engine/config.yml          （首选位置）
-#   ~/.dsh/dsh-decision-engine/startlux.yml        （旧名，首次启动自动改名）
+#   ~/.dsh/plugins/dsh-decision-engine/config.yml  （首选位置）
+#   ~/.dsh/plugins/dsh-decision-engine/startlux.yml（旧名，首次启动自动改名）
+#   ~/.dsh/dsh-decision-engine/config.yml          （上一代地址；首次启动整目录搬到 plugins/ 下）
 #   ~/.dsh/dsh-startlux-decision/startlux.yml      （上一代数据目录；自动拷到新目录）
 #   ~/.dsh/plugins/dsh-startlux-decision/startlux.yml
 #   ~/.dsh/plugins/dsh-startlux-guard/startlux.yml
@@ -429,7 +430,7 @@ pointCotTranslate: off
 # model、裁决、耗时、token，展开还能看到发给决策模型的现场（state）、
 # 问题（questions）与它回来的回答（answers）。
 #
-# 数据只落在本机 $DSH_HOME/dsh-decision-engine/decisions.jsonl，
+# 数据只落在本机 $DSH_HOME/plugins/dsh-decision-engine/decisions.jsonl，
 # **不经过任何网络请求**，也**不进**上面的匿名统计。
 #
 # 关掉之后**完全不写这个文件**（不采集内容、不占磁盘，标签页也随之消失）

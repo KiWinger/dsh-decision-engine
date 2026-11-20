@@ -104,7 +104,7 @@ function setup({ sandboxPolicy = true, workspaceRoot = "/work/repo" } = {}) {
   const listeners = hooks.get("tools/pre-execute") ?? [];
   return {
     home,
-    configPath: join(home, "dsh-decision-engine", "config.yml"),
+    configPath: join(home, "plugins", "dsh-decision-engine", "config.yml"),
     listener: listeners[0],
     calls,
     restore() {

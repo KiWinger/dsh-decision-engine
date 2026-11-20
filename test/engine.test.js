@@ -1345,7 +1345,7 @@ test("测试按钮：冷却中仍然照常发请求，但明确写出「本次�
     before: async ({ listener }) => {
       // 造出真实冷却：写一份「一败即冷却」的配置，再由守卫真的失败一次。
       // 直接改内部字段不算数——要验证的是 probe 读到的**真实**状态。
-      const configPath = join(process.env.DSH_HOME, "dsh-decision-engine", "config.yml");
+      const configPath = join(process.env.DSH_HOME, "plugins", "dsh-decision-engine", "config.yml");
       mkdirSync(join(configPath, ".."), { recursive: true });
       writeFileSync(
         configPath,

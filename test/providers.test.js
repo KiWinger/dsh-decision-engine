@@ -508,13 +508,21 @@ test("请求构造代码里不再出现硬编码的 bamboonode.dev", () => {
 });
 
 test("数据目录用新名，同时保留旧名做迁移/回退", () => {
-  // 两个都必须成立：
+  // 三个都必须成立：
   //   - 新名是主目录（配置最终要落在 dsh-decision-engine）
+  //   - 它挂在 plugins/ 父目录下（DSH 既有的插件数据目录惯例）
   //   - 旧名仍要出现在回退表里（否则老用户的 key 找不到，守卫静默失效）
   const index = readFileSync(new URL("../lib/index.js", import.meta.url), "utf8");
   assert.ok(
     index.includes('DATA_DIR_NAME = "dsh-decision-engine"'),
     "主数据目录应为 dsh-decision-engine",
+  );
+  // 惯例本身写在 home-paths.js（唯一的路径解析入口），这里盯它确实存在：
+  // 数据目录必须挂在 plugins/ 父目录下，与其它 DSH 插件一致。
+  const homePaths = readFileSync(new URL("../lib/home-paths.js", import.meta.url), "utf8");
+  assert.ok(
+    homePaths.includes('DSH_PLUGINS_DIR_NAME = "plugins"'),
+    "插件数据目录应挂在 plugins/ 父目录下，与其它 DSH 插件一致",
   );
   assert.ok(
     index.includes("dsh-startlux-decision"),

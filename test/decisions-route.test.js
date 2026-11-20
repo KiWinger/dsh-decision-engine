@@ -52,7 +52,7 @@ function setup() {
     effect() {},
   };
   apply(ctx, {});
-  return { home, routes, dataDir: join(home, "dsh-decision-engine") };
+  return { home, routes, dataDir: join(home, "plugins", "dsh-decision-engine") };
 }
 
 /**
@@ -136,7 +136,7 @@ function entry(over = {}) {
 test("缺少 sessionId 时返回 400（不返回全部记录）", async () => {
   const { home, routes } = setup();
   try {
-    seed(join(home, "dsh-decision-engine"), [entry(), entry({ seq: 2, sessionId: "session-b" })]);
+    seed(join(home, "plugins", "dsh-decision-engine"), [entry(), entry({ seq: 2, sessionId: "session-b" })]);
     const { status, data } = await get(routes, "/api/decision-engine/session-decisions");
     assert.equal(status, 400);
     assert.equal(typeof data.error, "string");
@@ -149,7 +149,7 @@ test("缺少 sessionId 时返回 400（不返回全部记录）", async () => {
 test("按会话过滤：只返回本会话的记录", async () => {
   const { home, routes } = setup();
   try {
-    seed(join(home, "dsh-decision-engine"), [
+    seed(join(home, "plugins", "dsh-decision-engine"), [
       entry({ seq: 1, sessionId: "session-a", tool: "read" }),
       entry({ seq: 2, sessionId: "session-b", tool: "grep" }),
       entry({ seq: 3, sessionId: "session-a", tool: "bash" }),
@@ -206,7 +206,7 @@ test("limit 生效且有上限（不会一次拉回全部）", async () => {
   const { home, routes } = setup();
   try {
     seed(
-      join(home, "dsh-decision-engine"),
+      join(home, "plugins", "dsh-decision-engine"),
       Array.from({ length: 40 }, (_, index) => entry({ seq: index + 1, tool: `t${index}` })),
     );
     const { data } = await get(
@@ -224,7 +224,7 @@ test("limit 生效且有上限（不会一次拉回全部）", async () => {
 test("超大的 limit 被压到上限之内", async () => {
   const { home, routes } = setup();
   try {
-    seed(join(home, "dsh-decision-engine"), [entry()]);
+    seed(join(home, "plugins", "dsh-decision-engine"), [entry()]);
     const { status, data } = await get(
       routes,
       "/api/decision-engine/session-decisions?sessionId=session-a&limit=999999",
@@ -239,7 +239,7 @@ test("超大的 limit 被压到上限之内", async () => {
 test("返回体带上界面需要的元信息（文件路径、开关）", async () => {
   const { home, routes } = setup();
   try {
-    seed(join(home, "dsh-decision-engine"), [entry()]);
+    seed(join(home, "plugins", "dsh-decision-engine"), [entry()]);
     const { data } = await get(
       routes,
       "/api/decision-engine/session-decisions?sessionId=session-a",
@@ -313,7 +313,7 @@ test("开关能被保存并回显（配置页的开关链路）", async () => {
     assert.equal(payload.decisionsTabEnabled, false, "保存后应立刻回显新值");
 
     // 落盘检查：值真的写进了 config.yml。
-    const raw = readFileSync(join(home, "dsh-decision-engine", "config.yml"), "utf8");
+    const raw = readFileSync(join(home, "plugins", "dsh-decision-engine", "config.yml"), "utf8");
     assert.ok(raw.includes("decisionsTabEnabled: false"), `配置内容：${raw}`);
   } finally {
     cleanupDir(home);
@@ -327,7 +327,7 @@ test("config.yml 里遗留的退役键不再影响任何行为（旧配置平滑
   // 插件照常启动，开关照常生效，并且它不会从任何出口再冒出来。
   const home = mkdtempSync(join(tmpdir(), "dsh-decroute-legacy-"));
   process.env.DSH_HOME = home;
-  const dataDir = join(home, "dsh-decision-engine");
+  const dataDir = join(home, "plugins", "dsh-decision-engine");
   mkdirSync(dataDir, { recursive: true });
   const legacy = [
     "enabled: true",
@@ -394,7 +394,7 @@ test("已退役的 decisionsCapture 不再是一个可写配置（PUT 只带它�
 
     // 而且什么都没落盘。
     assert.equal(
-      existsSync(join(home, "dsh-decision-engine", "config.yml")),
+      existsSync(join(home, "plugins", "dsh-decision-engine", "config.yml")),
       false,
       "被拒的请求不该写出配置文件",
     );
@@ -419,7 +419,7 @@ test("匿名统计档位能保存（此前点了「off」不落盘）", async ()
     const payload = await res.json();
     assert.equal(payload.telemetryLevel, "off", "保存后应回显新档位");
 
-    const raw = readFileSync(join(home, "dsh-decision-engine", "config.yml"), "utf8");
+    const raw = readFileSync(join(home, "plugins", "dsh-decision-engine", "config.yml"), "utf8");
     assert.ok(raw.includes("telemetryLevel: off"), `配置内容：${raw}`);
   } finally {
     cleanupDir(home);

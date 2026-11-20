@@ -49,7 +49,7 @@ function setup(options = {}) {
   // 可选：在 apply() 之前落一份配置，模拟「升级用户 / 已有配置」。
   // 全新安装默认开免费模型只应发生在完全没有历史配置时。
   if (options.seedConfig !== undefined) {
-    const dir = join(home, "dsh-decision-engine");
+    const dir = join(home, "plugins", "dsh-decision-engine");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "config.yml"), options.seedConfig, { encoding: "utf8", mode: 0o600 });
   }
@@ -118,7 +118,7 @@ function setup(options = {}) {
   };
   apply(ctx, {});
 
-  const dataDir = join(home, "dsh-decision-engine");
+  const dataDir = join(home, "plugins", "dsh-decision-engine");
   return {
     home,
     routes,

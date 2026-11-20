@@ -93,12 +93,12 @@
  * `degraded` 是另一套口径，别拿它过滤遥测）。先按 detail 分类计数：
  *
  *   jq -r 'select(.action=="degraded") | .detail' \
- *     ~/.dsh/dsh-decision-engine/telemetry.jsonl | sort | uniq -c | sort -rn
+ *     ~/.dsh/plugins/dsh-decision-engine/telemetry.jsonl | sort | uniq -c | sort -rn
  *
  * 再加一列耗时，四类失败立刻分开（同一条记录里的 `latencyMs` 就是判别特征）：
  *
  *   jq -r 'select(.action=="degraded") | "\(.detail)\t\(.latencyMs // 0)"' \
- *     ~/.dsh/dsh-decision-engine/telemetry.jsonl \
+ *     ~/.dsh/plugins/dsh-decision-engine/telemetry.jsonl \
  *   | awk -F'\t' '{c[$1]++; s[$1]+=$2;
  *        if(!($1 in mn)||$2<mn[$1])mn[$1]=$2;
  *        if($2>mx[$1])mx[$1]=$2}
@@ -125,7 +125,7 @@
  * 想进一步分 5xx 到底是谁的问题：
  *
  *   jq -r 'select(.action=="degraded" and (.detail|startswith("http-5"))) | .extra.body' \
- *     ~/.dsh/dsh-decision-engine/telemetry.jsonl | sort | uniq -c | sort -rn
+ *     ~/.dsh/plugins/dsh-decision-engine/telemetry.jsonl | sort | uniq -c | sort -rn
  *
  * 带 request id 的 `new_api_error` 是服务商内部的数据库错误——本地无论怎么
  * 改配置都不会变好，只能等或换 provider。

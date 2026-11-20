@@ -72,7 +72,7 @@ test("全新安装：免费模型默认开，且缺省值不写进 config.yml", 
     const data = await env.status();
     assert.equal(data.serverProvider.enabled, true, "全新安装默认必须开免费模型");
     assert.equal(
-      existsSync(join(env.home, "dsh-decision-engine", "config.yml")),
+      existsSync(join(env.home, "plugins", "dsh-decision-engine", "config.yml")),
       false,
       "默认开只是内存里的缺省值，不应凭空生成 config.yml",
     );

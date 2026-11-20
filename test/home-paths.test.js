@@ -19,7 +19,9 @@ import { join, resolve } from "node:path";
 import {
   DSH_HOME_DIR_NAME,
   DSH_HOME_ENV,
+  DSH_PLUGINS_DIR_NAME,
   dshHomePath,
+  dshPluginDataPath,
   expandHomePath,
   resolveDshHome,
 } from "../lib/home-paths.js";
@@ -29,6 +31,8 @@ const DEFAULT_HOME = join(homedir(), DSH_HOME_DIR_NAME);
 test("常量与宿主保持一致", () => {
   assert.equal(DSH_HOME_DIR_NAME, ".dsh");
   assert.equal(DSH_HOME_ENV, "DSH_HOME");
+  // plugins/ 是 DSH 既有的插件数据父目录惯例（本机已有多个插件在用）。
+  assert.equal(DSH_PLUGINS_DIR_NAME, "plugins");
 });
 
 test("未设置 DSH_HOME 时回退到 ~/.dsh", () => {
@@ -91,6 +95,24 @@ test("非波浪号路径原样返回", () => {
 test("dshHomePath 把子路径拼到家目录上", () => {
   assert.equal(dshHomePath("dsh-decision-engine"), join(resolve(DEFAULT_HOME), "dsh-decision-engine"));
   assert.equal(dshHomePath(), resolve(DEFAULT_HOME));
+});
+
+test("dshPluginDataPath 把插件数据目录解析到 $DSH_HOME/plugins/<name>", () => {
+  // 这是「插件数据统一收进 plugins/」那条惯例的唯一实现点：家目录根部
+  // 留给 DSH 自己（.credentials.yaml / profiles / sessions），插件各占一个子目录。
+  assert.equal(
+    dshPluginDataPath("dsh-decision-engine", { env: {} }),
+    join(resolve(DEFAULT_HOME), "plugins", "dsh-decision-engine"),
+  );
+  assert.equal(
+    dshPluginDataPath("dsh-rsi", { env: { DSH_HOME: "/tmp/alt-home" } }),
+    resolve("/tmp/alt-home/plugins/dsh-rsi"),
+  );
+  // 空白 DSH_HOME 仍然视为未设置——与 resolveDshHome 逐字一致。
+  assert.equal(
+    dshPluginDataPath("dsh-rsi", { env: { DSH_HOME: "   " } }),
+    join(resolve(DEFAULT_HOME), "plugins", "dsh-rsi"),
+  );
 });
 
 test("同一 DSH_HOME 在不同写法下解析结果一致", () => {

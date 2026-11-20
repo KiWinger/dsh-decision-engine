@@ -44,6 +44,9 @@ function loadConfig() {
   // （否则脚本可能去 ~/.dsh 找、而插件实际读的是 $DSH_HOME）。
   const home = resolveDshHome();
   const candidates = [
+    join(home, "plugins", "dsh-decision-engine", "config.yml"),
+    join(home, "plugins", "dsh-decision-engine", "startlux.yml"),
+    // 上一代地址（家目录根部）：整目录迁移失败时的回退位置，与插件本体一致。
     join(home, "dsh-decision-engine", "config.yml"),
     join(home, "dsh-decision-engine", "startlux.yml"),
     join(home, "dsh-startlux-decision", "startlux.yml"),

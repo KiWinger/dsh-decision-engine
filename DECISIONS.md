@@ -2,6 +2,25 @@
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
 
+## DEC-069 插件数据目录收进 $DSH_HOME/plugins/：一次性整目录迁移 + 失败回退读旧地址（2026-11-20）
+
+**背景**：本插件把自有数据放在 `$DSH_HOME/dsh-decision-engine/`（家目录根部），与 DSH 自己的东西（`.credentials.yaml`、`profiles/`、`sessions/`）平级。而 `plugins/` 早已是既有的插件数据父目录惯例——本机已有 `~/.dsh/plugins/dsh-generative-ui/`、`~/.dsh/plugins/dsh-model-fusion/`。同一个家目录下两套摆法，用户看不出哪块目录属于哪个插件，卸载/备份时也没法一把抓。
+
+**决定**：所有解析「插件自有目录」的入口统一改成 `$DSH_HOME/plugins/dsh-decision-engine/`，并加一次性整目录迁移把老地址搬过去。
+
+- **惯例只写一份**：`lib/home-paths.js` 新增 `DSH_PLUGINS_DIR_NAME = "plugins"` 与 `dshPluginDataPath(name)`，`index.js` 的 `defaultTelemetryDir()` 改为调它。家目录解析的既有语义（`$DSH_HOME` 优先、空白视为未设置、`~` 展开、相对路径规范化）一字不动，只多一层目录。各插件自己拼 `join(resolveDshHome(), ...)` 的话，早晚有某个入口漏掉 `plugins/`，然后用户在两个位置各有一半配置。
+- **整目录 move，不是单文件拷贝**：新增 `migratePluginDataDir()`，把 `<DSH_HOME>/dsh-decision-engine` 整体搬到 `<DSH_HOME>/plugins/dsh-decision-engine`。rename 优先（同卷原子、没有「拷了一半」的中间态），跨卷 EXDEV 退化为 `cpSync(recursive)` 到同父目录的 `<new>.migrating` staging、再 rename 落位、最后 `rmSync` 源目录。**先拷到 staging 再整体改名**是为了让半拷贝永远不占住新地址：否则一次磁盘写满就会留下一个「看着像迁移成功」的残缺目录，下次启动按「新地址已存在」直接跳过，用户从此读残缺配置。拷完必须删源，留着就是两份数据并存，之后读哪份说不清。
+- **三条边界**：旧地址不存在 → 静默什么都不做（全新安装不该被凭空造出 `plugins/`）；新地址已存在 → 绝不覆盖、绝不合并（合并等于把两套配置混成一套）；旧地址是普通文件而不是目录 → 不动它（那是用户的东西）。
+- **失败必须回退，不能让插件失效**：所有异常吞掉并返回 `"failed"`，`resolveConfigPath()` / `resolveTelemetryDir()` 继续从旧地址读。半拷贝的残骸顺手清掉，免得下次启动被误判成「新地址已存在」而永远不重试。
+- **迁移先于一切读写**：放在 `apply()` 最前面、`migrateLegacyData()` 之前。顺序反了的话，第一次启动就会「读旧位置、写新位置」，一份配置劈成两半。两件事别混：`migratePluginDataDir()` 搬**目录**（本次目录结构变更），`migrateLegacyData()` 搬**单文件**（更早的改名与跨代目录）。
+- **老用户不能被当成全新安装**：`hasAnyPriorConfig()` 的候选表补上旧地址里的 `config.yml` / `startlux.yml`。漏了它，迁移失败的老用户会被判成新装、默认打开免费模型，把本地 key 顶掉——这正是 DEC-062 明令禁止的。
+
+**为什么迁移失败不重试到底**：家目录不可写是环境问题，插件无权修改权限。回退读旧地址能让插件照常工作，用户只看到一条 warn 日志；而反复重试只会在每次启动时多花一次失败的系统调用。
+
+**验证**：`test/plugin-dir-migration.test.js`（新增 8 项，TDD 先红后绿）覆盖——正常搬迁（内容逐字保留、旧目录消失、`/status` 报新 `configPath`、key 仍可读、老用户默认仍关）、新地址已存在不覆盖不合并、旧地址不存在不造目录、迁移失败回退读旧目录且不崩溃、连续两次 apply 幂等、旧地址是普通文件时不动它、注入 `rename` 抛 EXDEV 时走拷贝分支并删源、落位失败时新地址不被残骸占住且 staging 被清掉。`test/home-paths.test.js` 新增 `dshPluginDataPath` 的三条断言（默认家目录 / `$DSH_HOME` / 空白值）。既有 8 个测试文件的夹具路径同步改到 `plugins/` 下。`node --test "test/*.test.js"` 全绿（773/773），`node scripts/verify-wiring.mjs` 全部通过。
+
+**改动文件**：`lib/index.js`（`DATA_DIR_NAME` 注释、新增 `legacyDataDir()` / `migratePluginDataDir()`、`defaultTelemetryDir()`、`hasAnyPriorConfig()`、`resolveConfigPath()`、`resolveTelemetryDir()`、`apply()` 迁移顺序与启动日志）、`lib/home-paths.js`（`DSH_PLUGINS_DIR_NAME` / `dshPluginDataPath`）、`lib/decision-store.js`、`lib/stats-store.js`、`config.example.yml`、`docs/lessons/cold-start-timeout.md`、`scripts/verify-endpoint.mjs`、`test/plugin-dir-migration.test.js`（新增）、`test/home-paths.test.js`、`test/providers.test.js`、`test/config-rename.test.js`、`test/decisions-route.test.js`、`test/save-path.test.js`、`test/scope-guard.test.js`、`test/server-provider-route.test.js`、`test/tolerance-guard.test.js`、`test/fresh-install-default.test.js`、`test/engine.test.js`、`DECISIONS.md`。
+
 ## DEC-068 面板顶部链接改宣传 DSH 插件市场（2026-11-20）
 
 **背景**：面板顶栏的页面级链接原来指向本插件的文档页 `https://dsh.zuos.us/dsh-decision-engine/`，文案「项目主页 ↗」。用户要求 link 部分改为宣传 `dsh.zuos.us` 的插件市场。`dsh.zuos.us` 首页本身就是插件市场（DEC-066：format 1 索引 + R2 自动更新，收录本插件等），其根 URL 即市场入口。

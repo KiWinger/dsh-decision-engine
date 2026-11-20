@@ -115,8 +115,8 @@ function setup({ body = answerBody() } = {}) {
   return {
     home,
     routes,
-    configPath: join(home, "dsh-decision-engine", "config.yml"),
-    dataDir: join(home, "dsh-decision-engine"),
+    configPath: join(home, "plugins", "dsh-decision-engine", "config.yml"),
+    dataDir: join(home, "plugins", "dsh-decision-engine"),
     /** 当前注册的守卫监听器（reloadOwnConfig 会重读配置，无需重新取）。 */
     listener: listeners[0],
     calls,

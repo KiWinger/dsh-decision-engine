@@ -53,7 +53,7 @@ function setup({ seedCredentials } = {}) {
     effect() {},
   };
   apply(ctx, {});
-  return { home, routes, credPath, configPath: join(home, "dsh-decision-engine", "config.yml") };
+  return { home, routes, credPath, configPath: join(home, "plugins", "dsh-decision-engine", "config.yml") };
 }
 
 /** 走真实 PUT /api/decision-engine/config。 */
@@ -68,7 +68,7 @@ async function putConfig(routes, body) {
 test("全新安装（数据目录不存在）首次保存能成功，并自动建出目录", async () => {
   const { home, routes, configPath } = setup();
   try {
-    assert.equal(existsSync(join(home, "dsh-decision-engine")), false, "前置：目录应不存在");
+    assert.equal(existsSync(join(home, "plugins", "dsh-decision-engine")), false, "前置：目录应不存在");
 
     const { status, data } = await putConfig(routes, {
       provider: "bamboonode",
@@ -78,7 +78,7 @@ test("全新安装（数据目录不存在）首次保存能成功，并自动�
     });
 
     assert.equal(status, 200, `首次保存应成功，实际：${JSON.stringify(data)}`);
-    assert.ok(existsSync(join(home, "dsh-decision-engine")), "应自动创建数据目录");
+    assert.ok(existsSync(join(home, "plugins", "dsh-decision-engine")), "应自动创建数据目录");
     assert.ok(existsSync(configPath), "应写出 config.yml");
 
     const raw = readFileSync(configPath, "utf8");
@@ -95,7 +95,10 @@ test("配置写入失败时，已写入的凭据回滚为原值（不留半套�
   });
   try {
     // 制造写入失败：把数据目录占成一个普通文件，mkdir 必然失败。
-    writeFileSync(join(home, "dsh-decision-engine"), "not a directory");
+    // 父目录（plugins/）先建出来——数据目录现在是它的子目录，父目录不存在时
+    // 这里会先 ENOENT，红在测试自己的准备步骤上而不是被测行为上。
+    mkdirSync(join(home, "plugins"), { recursive: true });
+    writeFileSync(join(home, "plugins", "dsh-decision-engine"), "not a directory");
     assert.equal(existsSync(configPath), false);
 
     const { status, data } = await putConfig(routes, {
@@ -192,7 +195,7 @@ test("/models：custom 不按 StartLux 类型过滤（用户自己的网关声�
   const originalFetch = globalThis.fetch;
   try {
     // 用户自己配的 custom：地址 / 模型 / key 都在 custom 自己的字段里。
-    mkdirSync(join(home, "dsh-decision-engine"), { recursive: true });
+    mkdirSync(join(home, "plugins", "dsh-decision-engine"), { recursive: true });
     writeFileSync(
       configPath,
       [
@@ -239,7 +242,7 @@ test("/models：systemone 风格的端点不做类型过滤（沿用既有规则
   const { home, routes, configPath } = setup();
   const originalFetch = globalThis.fetch;
   try {
-    mkdirSync(join(home, "dsh-decision-engine"), { recursive: true });
+    mkdirSync(join(home, "plugins", "dsh-decision-engine"), { recursive: true });
     writeFileSync(
       configPath,
       ["provider: systemone", "systemoneApiKey: sk-TS-1234567890", ""].join("\n"),

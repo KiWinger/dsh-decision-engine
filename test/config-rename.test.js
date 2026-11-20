@@ -50,7 +50,7 @@ function runApply() {
 
 test("旧名 startlux.yml 会被改名迁移为 config.yml，内容原样保留", () => {
   const home = makeHome();
-  const dir = join(home, "dsh-decision-engine");
+  const dir = join(home, "plugins", "dsh-decision-engine");
   mkdirSync(dir, { recursive: true });
   const legacy = join(dir, "startlux.yml");
   const original = "# 用户注释要保留\nenabled: true\nbamboonodeApiKey: sk-KEEP-ME-123\n";
@@ -76,7 +76,7 @@ test("旧名 startlux.yml 会被改名迁移为 config.yml，内容原样保留"
 
 test("已经存在 config.yml 时绝不被旧文件覆盖", () => {
   const home = makeHome();
-  const dir = join(home, "dsh-decision-engine");
+  const dir = join(home, "plugins", "dsh-decision-engine");
   mkdirSync(dir, { recursive: true });
   const current = join(dir, "config.yml");
   const keep = "enabled: true\nbamboonodeApiKey: sk-NEW-WINS\n";
@@ -106,7 +106,7 @@ test("历史数据目录（上一代位置）里的配置会被搬到新目录�
   process.env.DSH_HOME = home;
   try {
     runApply();
-    const target = join(home, "dsh-decision-engine", "config.yml");
+    const target = join(home, "plugins", "dsh-decision-engine", "config.yml");
     assert.ok(existsSync(target), "跨目录迁移应落到新目录的 config.yml");
     assert.equal(readFileSync(target, "utf8"), payload);
     // 跨目录是拷贝不是移动：旧文件保留，出问题可对照。
@@ -124,7 +124,7 @@ test("全新安装（无任何历史配置）不会凭空造出配置文件", ()
   process.env.DSH_HOME = home;
   try {
     runApply();
-    assert.equal(existsSync(join(home, "dsh-decision-engine", "config.yml")), false,
+    assert.equal(existsSync(join(home, "plugins", "dsh-decision-engine", "config.yml")), false,
       "没有历史配置时不应该创建空文件（否则用 DEFAULTS 即可，且避免误以为已配置）");
   } finally {
     process.env.DSH_HOME = prev ?? "";
