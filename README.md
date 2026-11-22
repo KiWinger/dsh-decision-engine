@@ -4,109 +4,34 @@
 
 **Free decision model provided**
 
-[website](https://dsh.zuos.us/dsh-decision-engine/) ·
-[config.example.yml](config.example.yml) · [DECISIONS.md](DECISIONS.md)
-
-> The site source lives in [zuosus/dsh-site](https://github.com/zuosus/dsh-site) — it was
-> split out of this repo on 2026-11-20 (DEC-067). This repo no longer contains `site/`.
-
 [简体中文](./README.zh.md)
 
-A judgement layer for DeepSeek Harness: before the main model acts, a small,
-cheap decision model judges each call — allow it, escalate it, reroute it to a
-cheaper model, or skip the call entirely. The plugin provides a free decision
-model, so a fresh install works out of the box — nothing to pay, nothing to
-configure; any other service exposing a decision endpoint can be plugged in as
-well.
+A judgement layer for DeepSeek Harness that does one thing: it takes "should this happen, is it worth it, which one" away from the main model and hands it to a decision model that is far cheaper. A free decision model ships with the plugin — a fresh install is already using it, with no key, no cost and no routes to configure.
 
-## Headline feature: subagents pick their own model
+## 1. A cheap small model replaces letting the LLM decide everything
 
-DeepSeek Harness normally gives a spawned subagent the **exact same provider,
-model and reasoning effort as the lead** (`resolveChildAgentOptions` →
-`parentAgentOptionsForDelegation`). That default is only right when the lead is
-doing the same kind of work itself. Sending a research subtask to the lead's
-strong model wastes money; sending a high-fidelity refactor to a cheap tier buys
-a rewrite.
+The main model spends its most expensive tokens on its cheapest judgements: may this tool call proceed, is this step worth the strong model, should the context be compacted now. The answers are usually just "yes / no / which one", yet answering them means re-reading the whole session history.
 
-`dsh-decision-engine` replaces that default. **When a subagent is spawned, the
-decision model itself chooses the model and the reasoning effort** — you do not
-configure a model ladder, a price table, or any routes.
+The decision model answers exactly those questions: it reads a trimmed-down state and returns a structured verdict — allow, escalate, reroute to a cheaper model, or skip the call entirely. The cost is a fraction of the main model re-reading its own context. The clearest case is tool authorization: it replaces auto-review, which sends the full session history to the main model on every tool call — roughly 60k tokens each time.
 
-- **Candidates come from what you already have.** The session's
-  `subagent/model-selection-policy` (the routes you already authorized in DSH
-  settings), falling back to the live `llm` adapter catalogue. Nothing new to
-  configure in this plugin.
-- **The model picks, it doesn't get a score to interpret.** The decision
-  endpoint only accepts `choice` / `score` / `noul`, so the candidates become a
-  `choice` question with stable short ids (`r0`…`rN`) mapped back to real
-  provider/model pairs. A malformed answer degrades to inheritance; the model
-  can never invent a non-existent route.
-- **Inheriting stays on the table.** The lead's current route is always a
-  candidate (labelled as such), so "just use what I'm using" is a valid answer
-  rather than a forced switch.
-- **Effort follows the target model's published capabilities.** Reasoning
-  effort is chosen from the model's own advertised `efforts`; if it publishes
-  none, the field is omitted rather than guessed (a guessed id fails the child
-  spawn outright).
-- **Explicit choice wins.** A `provider`/`model` passed directly in the
-  delegation call, or set with the `set_model` tool, outranks the automatic
-  judgement. `list_models` / `set_model` / `list_presets` are available to the
-  main agent; `switch_preset` is deliberately not, because the host locks a
-  session's preset once a turn has started.
+The free decision model is on by default for fresh installs; any other service exposing a decision endpoint can be plugged in instead — built-in presets, or your own base URL.
 
-### Verified on real infrastructure
+## 2. Which model a subagent uses, and how hard it thinks, is decided by the decision model
 
-This is not a design sketch. It was exercised end to end against the real
-decision endpoint and the real host modules (2026-11-19):
+DeepSeek Harness gives a spawned subagent the exact same provider, model and reasoning effort as the lead. That default only holds when the lead is doing the same kind of work itself: sending a research subtask to the lead's strong model is pure waste, and pushing a high-fidelity refactor down to a cheap tier buys a rewrite.
 
-| Layer | Result |
-|---|---|
-| Targeted tests | `node --test test/spawn-model.test.js test/spawn-adapter.test.js` → **46/46 pass** |
-| Full suite | `node --test test/` → **772/772 pass** |
-| Real decision endpoint | SiliconFlow (CN site), model `Kev-4B` → **HTTP 200**. For a verbatim-copy subtask the model chose the non-inherited route `r1` (`answers.route.choice = "r1"`, probability `r1 0.5881` vs `r0 0.4119`, `depth.score 0.3651`) |
-| Real end-to-end switch | That real answer fed through the real `spec.parse`/`decide` and real adapter produced `agent.model.select({ provider: "qwenwork", model: "deepseek-flash", reasoningEffort: "low" })` — the child actually moved **from the lead's `modelscope-token-plan/Qwen/Qwen3.8-Flash-Next` to `qwenwork/deepseek-flash`**, with a reasoning effort set from the model's own published capabilities |
+This plugin replaces that default. **On each spawn, the decision model picks the model in a `choice` question over the candidate routes, then picks the reasoning effort from what that model actually publishes.**
 
-The captured answer is one measured sample, kept as evidence that the question
-shape is accepted, the model really chooses among candidate routes, and the
-choice reaches the child's model selection — not a promise that every task
-picks the same route. (On demanding tasks the same model correctly chose to
-inherit.)
+- **Candidates are routes you already have.** They come from the session's `subagent/model-selection-policy` (the routes you authorized for subagents in DSH settings), falling back to the live `llm` adapter catalogue. There is nothing new to configure in this plugin.
+- **Inheriting the lead stays on the table** (and is labelled as such), so "just use what I'm using" is a valid answer rather than a forced switch.
+- **Effort follows the target model's published `efforts`.** If it publishes none, the field is omitted rather than guessed — a guessed id fails the child spawn outright.
+- **Explicit choice wins.** A `provider`/`model` passed in the delegation call, or set with `set_model`, outranks the automatic judgement.
 
-## Features
+## 3. The rest of the harness's behaviour is decided the same way
 
-**Nine decision points** (individually switchable; the subagent-model point is
-the headline one above):
+The same mechanism covers the harness's other judgements: model routing (mechanical steps downshift to a cheaper model), subtask delegation (continue inline, spawn a subagent, or form a team), context compaction (summarize, or just drop stale tool results), turn continuation, retrieval necessity, skill selection, and the COT translation gate.
 
-- tool authorization
-- model routing
-- delegation
-- **subagent model selection** ← see above
-- compaction
-- turn continuation
-- retrieval necessity
-- skill selection
-- COT translation gate
-
-**Modes**: off · observe · enforce
-
-**Providers**: system one · bamboonode · 硅基流动 SiliconFlow (CN / Global) ·
-Perplexity · OpenRouter · custom base URL
-
-**Review tolerance**: autonomous · relaxed · default · cautious
-
-**UI**: config page with collapsible sections · Decisions tab · stats ·
-readable approval card
-
-| Config page | Decisions tab |
-|---|---|
-| ![config page](docs/assets/config-page.png) | ![decisions tab](docs/assets/decisions-tab.png) |
-
-> Screenshots predate the collapsible-section layout (DEC-051).
-
-**Token saving**: exact cache · read-only tools bypass · state trimming
-
-**Reliability**: shadow by default · fail open on any error · timeout degrades ·
-stats can be turned off
+Each decision point has its own three-state switch: off · observe · enforce. Only tool authorization is on out of the box (in observe, recording without blocking); the rest you turn on as you want them. Any error, timeout or malformed answer fails open and lets the call through: the decision model must never be the reason a tool call gets stuck.
 
 ## License
 
