@@ -1,0 +1,123 @@
+/* Configuration surface. Host theme aliases keep light/dark mode in sync.
+ * !important only bridges the legacy inline styles; new layout uses classes. */
+.de-settings {
+  --de-space-1: 8px;
+  --de-space-2: 16px;
+  --de-space-3: 24px;
+  --de-space-4: 32px;
+  --de-text: var(--dsw-alias-label-primary, CanvasText);
+  --de-muted: var(--dsw-alias-label-secondary, CanvasText);
+  --de-border: var(--dsw-alias-border-l2, GrayText);
+  --de-surface: var(--dsw-alias-interactive-bg-hover-solid, Canvas);
+  --de-accent: var(--dsw-alias-state-business-primary, Highlight);
+  --de-radius: 6px;
+  --de-transition: 150ms ease;
+  container: de-settings / inline-size;
+  color: var(--de-text);
+  line-height: 1.6;
+  padding: var(--de-space-3) !important;
+}
+.de-settings *, .de-settings *::before, .de-settings *::after { box-sizing: border-box; }
+.de-settings a {
+  color: var(--de-muted) !important;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px !important;
+}
+.de-settings > a { margin-bottom: var(--de-space-2) !important; }
+.de-settings__tabs {
+  gap: var(--de-space-3) !important;
+  margin-bottom: var(--de-space-3) !important;
+  border-color: var(--de-border) !important;
+}
+.de-settings__tabs button {
+  margin: 0 0 -1px !important;
+  padding: var(--de-space-1) 0 !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--de-muted) !important;
+  opacity: 1 !important;
+}
+.de-settings__tabs button[aria-current="page"] {
+  border-bottom-color: var(--de-text) !important;
+  color: var(--de-text) !important;
+  font-weight: 600 !important;
+}
+.de-settings .de-cfg { display: flex; flex-direction: column; gap: 0; }
+.de-settings .de-cfg__section { display: flex; flex-direction: column; padding: var(--de-space-3) 0; }
+.de-settings .de-cfg__section:first-child { padding-top: 0; }
+.de-settings .de-cfg__section + .de-cfg__section { border-top: 1px solid var(--de-border); }
+.de-settings .de-cfg__section-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--de-space-2); width: 100%; margin: 0;
+  padding: var(--de-space-1) 0; border: 0; background: transparent;
+  color: var(--de-text); font: inherit; font-size: 15px;
+  font-weight: 600; text-align: left; cursor: pointer;
+}
+.de-settings .de-cfg__section-hd:hover { color: var(--de-accent); }
+.de-settings .de-cfg__section-left { display: flex; align-items: center; min-width: 0; }
+/* Titles already name these groups: coloured badges add no information. */
+.de-settings .de-cfg__section-ic { display: none; }
+.de-settings .de-cfg__section-body { display: flex; flex-direction: column; padding-top: var(--de-space-2); }
+.de-settings .de-cfg__section-body[hidden] { display: none; }
+.de-settings .de-cfg__chevron { color: var(--de-muted); transition: transform var(--de-transition); }
+.de-settings .de-cfg__chevron--open { transform: rotate(90deg); }
+.de-settings .de-cfg__row {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start !important; gap: var(--de-space-3) !important;
+  padding: var(--de-space-2) 0 !important; border: 0 !important;
+}
+.de-settings .de-cfg__text { grid-column: span 7; gap: 4px !important; }
+.de-settings .de-cfg__label { color: var(--de-text); font-size: 13px !important; line-height: 1.6 !important; }
+.de-settings .de-cfg__hint, .de-settings .de-cfg__note {
+  color: var(--de-muted); opacity: 1 !important; line-height: 1.6 !important;
+}
+.de-settings .de-cfg__note { font-size: 12px !important; }
+.de-settings .de-cfg__control {
+  grid-column: span 5; display: flex; align-items: center;
+  justify-content: flex-end; min-width: 0; gap: var(--de-space-1);
+}
+.de-settings .de-cfg__control > * { min-width: 0 !important; max-width: 100%; }
+.de-settings input:not([type="range"]), .de-settings select, .de-settings textarea {
+  min-width: 0 !important; width: 100%; max-width: 100%;
+  min-height: 36px; padding: var(--de-space-1) 10px !important;
+  border: 1px solid var(--de-border) !important; border-radius: var(--de-radius) !important;
+  background: transparent !important; color: var(--de-text) !important;
+  font-family: inherit !important; font-size: 12px !important;
+}
+.de-settings input[type="password"], .de-settings input[type="url"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+}
+.de-settings input[aria-invalid="true"] { border-color: var(--dsw-alias-state-error-primary, Mark) !important; }
+.de-settings button { cursor: pointer; transition: color var(--de-transition), background-color var(--de-transition); }
+.de-settings button:not(.de-cfg__section-hd):not([aria-pressed]):not(.de-settings__tabs button) {
+  min-height: 32px; border-color: var(--de-border) !important;
+  background: transparent !important; color: var(--de-text) !important;
+}
+.de-settings button:not(.de-cfg__section-hd):not([aria-pressed]):hover { background: var(--de-surface) !important; }
+.de-settings button:disabled { opacity: .5; cursor: not-allowed; }
+.de-settings :is(button, input, select, textarea, a):focus-visible {
+  outline: 2px solid var(--de-accent); outline-offset: 3px;
+}
+.de-settings .de-cfg__control button[aria-pressed] { background: var(--de-border) !important; }
+.de-settings .de-cfg__control button[aria-pressed="true"] { background: var(--de-accent) !important; }
+.de-settings .de-cfg__footer {
+  border-top: 1px solid var(--de-border); padding-top: var(--de-space-2);
+  margin-top: var(--de-space-2);
+}
+.de-settings .de-cfg__actions { margin: 0 !important; flex-wrap: wrap; }
+.de-settings .de-cfg__footer > div:not(.de-cfg__actions) {
+  color: var(--de-muted); opacity: 1 !important; overflow-wrap: anywhere; word-break: normal !important;
+}
+@container (max-width: 560px) {
+  .de-settings .de-cfg__row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--de-space-1) !important; }
+  .de-settings .de-cfg__text, .de-settings .de-cfg__control { grid-column: 1 / -1; }
+  .de-settings .de-cfg__control { justify-content: flex-start; }
+  .de-settings .de-cfg__control > div { flex-wrap: wrap; }
+  .de-settings .de-cfg__control input, .de-settings .de-cfg__control select { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .de-settings *, .de-settings *::before, .de-settings *::after { transition: none !important; animation: none !important; }
+}

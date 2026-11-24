@@ -2,6 +2,20 @@
 
 <!-- APPEND-ONLY LOG: 新条目插入到此行之后 -->
 
+## DEC-070 配置页视觉重构：独立 CSS 源文件 + 语义变量 + 字体主导层级，不引入新框架（2026-11-24）
+
+**背景**：配置页沿用早期仿 rewind 插件的行布局：分组标题带彩色色块图标与同色竖线、每行一条底边线、开关用绿/灰填充、多选按钮用靛蓝高亮。信息层级靠颜色和盒子表达，字符间距与留白不成系统，窄屏下左文右控件会互相挤压。用户要求「更高级优雅克制」，技术栈仍是原生 JS + CSS。
+
+**决定**：
+- **视觉减法**：分组的彩色图标与竖线直接移除（标题文字已经说明分组是什么，装饰不携带信息）；每行底边线只在分组之间保留一条；配色收敛为宿主语义变量（`--dsw-alias-*`），不再硬编码靛蓝/绿/红的 rgba；层级改由字号、字重与留白承担。
+- **独立可编辑样式源**：`lib/client.config.css` 是唯一可编辑的样式源，用 `--de-space-*` 语义间距、8px 基线和 12 列网格（左 7 列文字 / 右 5 列控件）；`scripts/sync-config-css.mjs` 把它逐字嵌入 `client.js` 的 `CFG_SECTION_CSS`——宿主直接加载单文件 bundle，不解析本地 CSS import，因此样式源与产物必须同步，`--check` 在 CI 中防漂移。同理，行渲染与控件标签关联的实现源放在 `lib/client.config-controls.js` 并嵌入同一 bundle，避免继续加厚 8000 行的 `client.js`。
+- **可访问性随重构补齐**：每行标题生成稳定 id，控件（input/select/textarea 及 `aria-pressed` 开关）递归关联 `aria-labelledby` 与 `aria-describedby`；tab 改用 `aria-current="page"` 而非 `aria-pressed`（它是页面导航，不是开关）；自动保存状态行加 `role="status"` / `aria-live="polite"`，失败原因与重试按钮保持可读可点；窄屏容器查询把行改为纵向占满，键盘焦点有 `:focus-visible`，系统减弱动效时不播放过渡。
+- **行为不变**：自动保存（离散控件即时、文本框防抖、密钥失焦/回车才写）、分组折叠与 localStorage 偏好、provider 分槽存储、端点探测与所有配置字段逐字保留；只改结构与样式，不改任何配置语义。
+
+**验证**：新增 `test/config-design.test.js`（9 项，先红后绿：实现前 8 项中 4 项失败，均为行为断言——缺 `de-settings` 根、缺 `de-cfg__row` / `data-field`、开关缺 `aria-labelledby`、保存失败缺 live 状态；随后补齐静态 CSS 与 bundle 内嵌一致的第 9 项）。全套 `node --test test/` 782/782 通过，`node scripts/verify-wiring.mjs` 全部通过，`scripts/sync-config-css.mjs --check` 无漂移。
+
+**改动文件**：`lib/client.config.css`（新增）、`lib/client.config-controls.js`（新增）、`scripts/sync-config-css.mjs`（新增）、`test/config-design.test.js`（新增）、`lib/client.js`（嵌入样式与行渲染源、根与 tab 语义、状态行 live 属性）、`DECISIONS.md`。
+
 ## DEC-069 插件数据目录收进 $DSH_HOME/plugins/：一次性整目录迁移 + 失败回退读旧地址（2026-11-20）
 
 **背景**：本插件把自有数据放在 `$DSH_HOME/dsh-decision-engine/`（家目录根部），与 DSH 自己的东西（`.credentials.yaml`、`profiles/`、`sessions/`）平级。而 `plugins/` 早已是既有的插件数据父目录惯例——本机已有 `~/.dsh/plugins/dsh-generative-ui/`、`~/.dsh/plugins/dsh-model-fusion/`。同一个家目录下两套摆法，用户看不出哪块目录属于哪个插件，卸载/备份时也没法一把抓。
